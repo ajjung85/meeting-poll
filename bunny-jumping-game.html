@@ -413,13 +413,15 @@
             const bunnyScreenY = bunny.y - cameraY;
             if (bunnyScreenY < canvas.height * 0.4) {
                 cameraY = bunny.y - canvas.height * 0.4;
+            }
 
-                // Update max height / score
-                const newHeight = Math.floor(cameraY / 10);
-                if (newHeight > maxHeight) {
-                    maxHeight = newHeight;
-                    score = maxHeight;
-                }
+            // Update max height / score (height = how far bunny climbed from start)
+            const startY = canvas.height - 100;
+            const heightClimbed = startY - bunny.y;
+            const newHeight = Math.floor(heightClimbed / 10);
+            if (newHeight > maxHeight) {
+                maxHeight = newHeight;
+                score = maxHeight;
             }
 
             // Update fading platforms
