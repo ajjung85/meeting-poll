@@ -243,6 +243,7 @@
         let highScore = parseInt(localStorage.getItem('bunnyHopHighScore')) || 0;
         let maxHeight = 0;
         let cameraY = 0;
+        let startY = 0; // Store bunny's starting Y position
 
         // Movement controls
         let moveLeft = false;
@@ -296,6 +297,7 @@
         function initGame() {
             bunny.x = canvas.width / 2 - CONFIG.bunnyWidth / 2;
             bunny.y = canvas.height - 100;
+            startY = bunny.y; // Store starting position for height calculation
             bunny.vx = 0;
             bunny.vy = CONFIG.jumpForce; // Start with an upward jump!
             bunny.isJumping = true;
@@ -416,12 +418,13 @@
             }
 
             // Update max height / score (height = how far bunny climbed from start)
-            const startY = canvas.height - 100;
             const heightClimbed = startY - bunny.y;
-            const newHeight = Math.floor(heightClimbed / 10);
-            if (newHeight > maxHeight) {
-                maxHeight = newHeight;
-                score = maxHeight;
+            if (heightClimbed > 0) {
+                const newHeight = Math.floor(heightClimbed / 10);
+                if (newHeight > maxHeight) {
+                    maxHeight = newHeight;
+                    score = maxHeight;
+                }
             }
 
             // Update fading platforms
