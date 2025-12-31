@@ -349,7 +349,7 @@
             // Apply gravity
             bunny.vy += CONFIG.gravity;
 
-            // Update position
+            // Update position (bunny.y is in WORLD coordinates)
             bunny.x += bunny.vx;
             bunny.y += bunny.vy;
 
@@ -364,20 +364,20 @@
             bunny.earPhase += 0.15;
             bunny.blinkTimer++;
 
-            // Check platform collisions (only when falling AND coming from above)
+            // Check platform collisions in WORLD coordinates (only when falling)
             if (bunny.vy > 0) {
                 for (let platform of platforms) {
                     if (platform.fadeOut > 0) continue;
 
                     const bunnyBottom = bunny.y + CONFIG.bunnyHeight;
-                    const bunnyPrevBottom = bunnyBottom - bunny.vy; // Where bunny was last frame
+                    const bunnyPrevBottom = bunnyBottom - bunny.vy;
                     const bunnyLeft = bunny.x;
                     const bunnyRight = bunny.x + CONFIG.bunnyWidth;
-                    const platTop = platform.y - cameraY;
+                    const platTop = platform.y; // World coordinate!
                     const platLeft = platform.x;
                     const platRight = platform.x + CONFIG.platformWidth;
 
-                    // Only collide if bunny was above platform last frame (passing through from above)
+                    // Only collide if bunny was above platform last frame
                     if (bunnyPrevBottom <= platTop &&
                         bunnyBottom >= platTop &&
                         bunnyRight > platLeft &&
@@ -397,7 +397,7 @@
                             for (let i = 0; i < 8; i++) {
                                 particles.push({
                                     x: platform.x + CONFIG.platformWidth / 2,
-                                    y: platTop,
+                                    y: platform.y,
                                     vx: (Math.random() - 0.5) * 4,
                                     vy: (Math.random() - 0.5) * 4,
                                     life: 1,
@@ -409,12 +409,10 @@
                 }
             }
 
-            // Update camera and score based on height
-            const bunnyScreenY = bunny.y;
-            if (bunnyScreenY < canvas.height * 0.3) {
-                const diff = canvas.height * 0.3 - bunnyScreenY;
-                cameraY += diff;
-                bunny.y += diff;
+            // Update camera to follow bunny (bunny screen position)
+            const bunnyScreenY = bunny.y - cameraY;
+            if (bunnyScreenY < canvas.height * 0.4) {
+                cameraY = bunny.y - canvas.height * 0.4;
 
                 // Update max height / score
                 const newHeight = Math.floor(cameraY / 10);
@@ -463,8 +461,9 @@
                 }
             }
 
-            // Check game over (fell below screen)
-            if (bunny.y > canvas.height + 50) {
+            // Check game over (fell below visible screen area)
+            const bunnyScreenYEnd = bunny.y - cameraY;
+            if (bunnyScreenYEnd > canvas.height + 50) {
                 gameOver();
             }
         }
@@ -527,7 +526,7 @@
             // Draw particles
             particles.forEach(p => {
                 ctx.beginPath();
-                ctx.arc(p.x, p.y - cameraY + canvas.height * 0.4, 4 * p.life, 0, Math.PI * 2);
+                ctx.arc(p.x, p.y - cameraY, 4 * p.life, 0, Math.PI * 2);
                 ctx.fillStyle = p.color.replace(')', `, ${p.life})`).replace('hsl', 'hsla');
                 ctx.fill();
             });
@@ -614,7 +613,7 @@
 
         function drawBunny() {
             const x = bunny.x + CONFIG.bunnyWidth / 2;
-            const y = bunny.y + CONFIG.bunnyHeight / 2;
+            const y = (bunny.y - cameraY) + CONFIG.bunnyHeight / 2; // Convert to screen coords
 
             ctx.save();
             ctx.translate(x, y);
