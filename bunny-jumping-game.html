@@ -365,20 +365,22 @@
             bunny.earPhase += 0.15;
             bunny.blinkTimer++;
 
-            // Check platform collisions (only when falling)
+            // Check platform collisions (only when falling AND coming from above)
             if (bunny.vy > 0) {
                 for (let platform of platforms) {
                     if (platform.fadeOut > 0) continue;
 
                     const bunnyBottom = bunny.y + CONFIG.bunnyHeight;
+                    const bunnyPrevBottom = bunnyBottom - bunny.vy; // Where bunny was last frame
                     const bunnyLeft = bunny.x;
                     const bunnyRight = bunny.x + CONFIG.bunnyWidth;
                     const platTop = platform.y - cameraY;
                     const platLeft = platform.x;
                     const platRight = platform.x + CONFIG.platformWidth;
 
-                    if (bunnyBottom >= platTop &&
-                        bunnyBottom <= platTop + CONFIG.platformHeight + bunny.vy &&
+                    // Only collide if bunny was above platform last frame (passing through from above)
+                    if (bunnyPrevBottom <= platTop &&
+                        bunnyBottom >= platTop &&
                         bunnyRight > platLeft &&
                         bunnyLeft < platRight) {
 
