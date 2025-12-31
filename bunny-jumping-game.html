@@ -1,0 +1,857 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Bunny Hop - Platform Jumping Adventure</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            touch-action: manipulation;
+        }
+
+        #gameContainer {
+            position: relative;
+            max-width: 100vw;
+            max-height: 100vh;
+        }
+
+        #gameCanvas {
+            display: block;
+            border: 3px solid #ff9ecd;
+            box-shadow: 0 0 30px rgba(255, 158, 205, 0.5),
+                        inset 0 0 30px rgba(255, 158, 205, 0.1);
+            border-radius: 10px;
+        }
+
+        #startScreen, #gameOverScreen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: rgba(26, 26, 46, 0.95);
+            border-radius: 10px;
+            z-index: 10;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        h1 {
+            color: #ff9ecd;
+            font-size: 2.5rem;
+            text-shadow: 0 0 20px #ff9ecd, 0 0 40px #a855f7;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        h2 {
+            color: #a855f7;
+            font-size: 1.8rem;
+            text-shadow: 0 0 15px #a855f7;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: #c4b5fd;
+            font-size: 1rem;
+            margin-bottom: 30px;
+        }
+
+        .bunny-icon {
+            font-size: 4rem;
+            margin-bottom: 20px;
+        }
+
+        .instructions {
+            color: #e0d4f7;
+            font-size: 1rem;
+            text-align: center;
+            line-height: 1.8;
+            margin-bottom: 30px;
+            padding: 0 20px;
+        }
+
+        .score-display {
+            color: #fbbf24;
+            font-size: 2rem;
+            text-shadow: 0 0 15px #fbbf24;
+            margin: 20px 0;
+        }
+
+        .height-label {
+            color: #a3e635;
+            font-size: 1rem;
+            margin-bottom: 5px;
+        }
+
+        .btn {
+            padding: 15px 40px;
+            font-size: 1.2rem;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 10px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #ff9ecd, #a855f7);
+            color: #1a1a2e;
+            font-weight: bold;
+        }
+
+        .btn-primary:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 30px rgba(255, 158, 205, 0.8);
+        }
+
+        .high-score {
+            color: #4ade80;
+            font-size: 1.2rem;
+            margin-top: 10px;
+        }
+
+        #controls {
+            position: absolute;
+            bottom: 20px;
+            left: 0;
+            right: 0;
+            display: flex;
+            justify-content: space-between;
+            padding: 0 10px;
+            pointer-events: none;
+            z-index: 5;
+        }
+
+        .control-btn {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            background: rgba(255, 158, 205, 0.3);
+            border: 2px solid rgba(255, 158, 205, 0.6);
+            color: white;
+            font-size: 1.5rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            pointer-events: auto;
+            touch-action: manipulation;
+            user-select: none;
+        }
+
+        .control-btn:active {
+            background: rgba(255, 158, 205, 0.6);
+            transform: scale(0.95);
+        }
+
+        @media (max-width: 480px) {
+            h1 {
+                font-size: 1.8rem;
+            }
+            .instructions {
+                font-size: 0.9rem;
+            }
+            .control-btn {
+                width: 60px;
+                height: 60px;
+                font-size: 1.3rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <canvas id="gameCanvas"></canvas>
+
+        <div id="controls" class="hidden">
+            <button class="control-btn" id="leftBtn">◀</button>
+            <button class="control-btn" id="rightBtn">▶</button>
+        </div>
+
+        <div id="startScreen">
+            <div class="bunny-icon">🐰</div>
+            <h1>Bunny Hop</h1>
+            <p class="subtitle">Platform Jumping Adventure</p>
+            <div class="instructions">
+                Tilt your device or tap the arrows<br>
+                to move left and right<br>
+                Platforms disappear after you touch them!<br>
+                How high can you climb?
+            </div>
+            <button class="btn btn-primary" id="startBtn">START HOPPING</button>
+        </div>
+
+        <div id="gameOverScreen" class="hidden">
+            <h2>GAME OVER</h2>
+            <div class="height-label">Height Reached</div>
+            <div class="score-display"><span id="finalScore">0</span>m</div>
+            <div class="high-score">Best: <span id="highScore">0</span>m</div>
+            <button class="btn btn-primary" id="restartBtn">TRY AGAIN</button>
+        </div>
+    </div>
+
+    <script>
+        // Game Configuration
+        const CONFIG = {
+            gravity: 0.4,
+            jumpForce: -14,
+            moveSpeed: 6,
+            platformWidth: 70,
+            platformHeight: 15,
+            platformCount: 8,
+            bunnyWidth: 40,
+            bunnyHeight: 45,
+            cloudCount: 5,
+            starCount: 50
+        };
+
+        // Canvas Setup
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        function resizeCanvas() {
+            const maxWidth = Math.min(window.innerWidth - 20, 400);
+            const maxHeight = Math.min(window.innerHeight - 20, 700);
+            canvas.width = maxWidth;
+            canvas.height = maxHeight;
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        // Game State
+        let gameState = 'start';
+        let score = 0;
+        let highScore = parseInt(localStorage.getItem('bunnyHopHighScore')) || 0;
+        let maxHeight = 0;
+        let cameraY = 0;
+
+        // Movement controls
+        let moveLeft = false;
+        let moveRight = false;
+        let tiltX = 0;
+        let useTilt = false;
+
+        // Player (Bunny)
+        const bunny = {
+            x: 0,
+            y: 0,
+            vx: 0,
+            vy: 0,
+            isJumping: false,
+            earPhase: 0,
+            blinkTimer: 0
+        };
+
+        // Platforms
+        let platforms = [];
+
+        // Background elements
+        let clouds = [];
+        let stars = [];
+        let particles = [];
+
+        // Initialize background
+        function initBackground() {
+            stars = [];
+            for (let i = 0; i < CONFIG.starCount; i++) {
+                stars.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height * 3,
+                    size: Math.random() * 2 + 0.5,
+                    twinkle: Math.random() * Math.PI * 2
+                });
+            }
+
+            clouds = [];
+            for (let i = 0; i < CONFIG.cloudCount; i++) {
+                clouds.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height * 2,
+                    width: 60 + Math.random() * 40,
+                    speed: 0.2 + Math.random() * 0.3
+                });
+            }
+        }
+
+        // Initialize game
+        function initGame() {
+            bunny.x = canvas.width / 2 - CONFIG.bunnyWidth / 2;
+            bunny.y = canvas.height - 100;
+            bunny.vx = 0;
+            bunny.vy = 0;
+            bunny.isJumping = false;
+
+            platforms = [];
+            particles = [];
+            score = 0;
+            maxHeight = 0;
+            cameraY = 0;
+
+            initBackground();
+
+            // Create initial platforms
+            // First platform directly under bunny
+            platforms.push({
+                x: canvas.width / 2 - CONFIG.platformWidth / 2,
+                y: canvas.height - 50,
+                touched: false,
+                fadeOut: 0,
+                originalY: canvas.height - 50
+            });
+
+            // Generate more platforms going up
+            for (let i = 1; i < CONFIG.platformCount; i++) {
+                createPlatform(canvas.height - 50 - i * 90);
+            }
+        }
+
+        function createPlatform(y) {
+            const x = Math.random() * (canvas.width - CONFIG.platformWidth);
+            platforms.push({
+                x: x,
+                y: y,
+                touched: false,
+                fadeOut: 0,
+                originalY: y
+            });
+        }
+
+        function update() {
+            if (gameState !== 'playing') return;
+
+            // Handle movement
+            if (useTilt) {
+                bunny.vx = tiltX * CONFIG.moveSpeed * 0.5;
+            } else {
+                if (moveLeft) bunny.vx = -CONFIG.moveSpeed;
+                else if (moveRight) bunny.vx = CONFIG.moveSpeed;
+                else bunny.vx *= 0.8; // Friction
+            }
+
+            // Apply gravity
+            bunny.vy += CONFIG.gravity;
+
+            // Update position
+            bunny.x += bunny.vx;
+            bunny.y += bunny.vy;
+
+            // Screen wrap
+            if (bunny.x + CONFIG.bunnyWidth < 0) {
+                bunny.x = canvas.width;
+            } else if (bunny.x > canvas.width) {
+                bunny.x = -CONFIG.bunnyWidth;
+            }
+
+            // Animation updates
+            bunny.earPhase += 0.15;
+            bunny.blinkTimer++;
+
+            // Check platform collisions (only when falling)
+            if (bunny.vy > 0) {
+                for (let platform of platforms) {
+                    if (platform.fadeOut > 0) continue;
+
+                    const bunnyBottom = bunny.y + CONFIG.bunnyHeight;
+                    const bunnyLeft = bunny.x;
+                    const bunnyRight = bunny.x + CONFIG.bunnyWidth;
+                    const platTop = platform.y - cameraY;
+                    const platLeft = platform.x;
+                    const platRight = platform.x + CONFIG.platformWidth;
+
+                    if (bunnyBottom >= platTop &&
+                        bunnyBottom <= platTop + CONFIG.platformHeight + bunny.vy &&
+                        bunnyRight > platLeft &&
+                        bunnyLeft < platRight) {
+
+                        // Land on platform
+                        bunny.y = platTop - CONFIG.bunnyHeight;
+                        bunny.vy = CONFIG.jumpForce;
+                        bunny.isJumping = true;
+
+                        // Mark platform as touched - it will disappear
+                        if (!platform.touched) {
+                            platform.touched = true;
+                            platform.fadeOut = 1;
+
+                            // Create particles
+                            for (let i = 0; i < 8; i++) {
+                                particles.push({
+                                    x: platform.x + CONFIG.platformWidth / 2,
+                                    y: platTop,
+                                    vx: (Math.random() - 0.5) * 4,
+                                    vy: (Math.random() - 0.5) * 4,
+                                    life: 1,
+                                    color: `hsl(${280 + Math.random() * 60}, 70%, 60%)`
+                                });
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Update camera and score based on height
+            const bunnyScreenY = bunny.y;
+            if (bunnyScreenY < canvas.height * 0.4) {
+                const diff = canvas.height * 0.4 - bunnyScreenY;
+                cameraY += diff;
+                bunny.y += diff;
+
+                // Update max height / score
+                const newHeight = Math.floor(cameraY / 10);
+                if (newHeight > maxHeight) {
+                    maxHeight = newHeight;
+                    score = maxHeight;
+                }
+            }
+
+            // Update fading platforms
+            for (let i = platforms.length - 1; i >= 0; i--) {
+                const platform = platforms[i];
+                if (platform.fadeOut > 0) {
+                    platform.fadeOut -= 0.03;
+                    if (platform.fadeOut <= 0) {
+                        platforms.splice(i, 1);
+                    }
+                }
+            }
+
+            // Remove platforms below screen and add new ones above
+            for (let i = platforms.length - 1; i >= 0; i--) {
+                if (platforms[i].y - cameraY > canvas.height + 50) {
+                    platforms.splice(i, 1);
+                }
+            }
+
+            // Generate new platforms above
+            while (platforms.length < CONFIG.platformCount) {
+                const highestPlatform = platforms.reduce((min, p) =>
+                    p.y < min ? p.y : min, Infinity);
+                createPlatform(highestPlatform - 80 - Math.random() * 40);
+            }
+
+            // Update particles
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                p.vy += 0.1;
+                p.life -= 0.02;
+                if (p.life <= 0) {
+                    particles.splice(i, 1);
+                }
+            }
+
+            // Check game over (fell below screen)
+            if (bunny.y > canvas.height + 50) {
+                gameOver();
+            }
+        }
+
+        function gameOver() {
+            gameState = 'gameOver';
+            if (score > highScore) {
+                highScore = score;
+                localStorage.setItem('bunnyHopHighScore', highScore);
+            }
+            document.getElementById('finalScore').textContent = score;
+            document.getElementById('highScore').textContent = highScore;
+            document.getElementById('gameOverScreen').classList.remove('hidden');
+            document.getElementById('controls').classList.add('hidden');
+        }
+
+        function draw() {
+            // Sky gradient based on height
+            const skyHue = Math.min(260, 220 + score * 0.1);
+            const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+            gradient.addColorStop(0, `hsl(${skyHue}, 50%, 15%)`);
+            gradient.addColorStop(1, `hsl(${skyHue - 20}, 40%, 25%)`);
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Draw stars
+            stars.forEach(star => {
+                const starY = (star.y - cameraY * 0.1) % (canvas.height * 3);
+                const adjustedY = starY < 0 ? starY + canvas.height * 3 : starY;
+                if (adjustedY < canvas.height) {
+                    const twinkle = Math.sin(Date.now() * 0.003 + star.twinkle) * 0.5 + 0.5;
+                    ctx.beginPath();
+                    ctx.arc(star.x, adjustedY, star.size * twinkle, 0, Math.PI * 2);
+                    ctx.fillStyle = `rgba(255, 255, 255, ${0.3 + twinkle * 0.7})`;
+                    ctx.fill();
+                }
+            });
+
+            // Draw clouds
+            clouds.forEach(cloud => {
+                cloud.x += cloud.speed;
+                if (cloud.x > canvas.width + cloud.width) {
+                    cloud.x = -cloud.width;
+                }
+                const cloudY = (cloud.y - cameraY * 0.2) % (canvas.height * 2);
+                const adjustedY = cloudY < -50 ? cloudY + canvas.height * 2 : cloudY;
+                if (adjustedY < canvas.height + 50 && adjustedY > -50) {
+                    drawCloud(cloud.x, adjustedY, cloud.width);
+                }
+            });
+
+            // Draw platforms
+            platforms.forEach(platform => {
+                const screenY = platform.y - cameraY;
+                if (screenY > -20 && screenY < canvas.height + 20) {
+                    drawPlatform(platform, screenY);
+                }
+            });
+
+            // Draw particles
+            particles.forEach(p => {
+                ctx.beginPath();
+                ctx.arc(p.x, p.y - cameraY + canvas.height * 0.4, 4 * p.life, 0, Math.PI * 2);
+                ctx.fillStyle = p.color.replace(')', `, ${p.life})`).replace('hsl', 'hsla');
+                ctx.fill();
+            });
+
+            // Draw bunny
+            drawBunny();
+
+            // Draw score
+            if (gameState === 'playing') {
+                ctx.fillStyle = '#fbbf24';
+                ctx.font = 'bold 24px Arial';
+                ctx.textAlign = 'left';
+                ctx.shadowColor = '#fbbf24';
+                ctx.shadowBlur = 10;
+                ctx.fillText(`${score}m`, 15, 35);
+                ctx.shadowBlur = 0;
+
+                // Height indicator
+                ctx.fillStyle = '#a3e635';
+                ctx.font = '14px Arial';
+                ctx.fillText('Height', 15, 55);
+            }
+        }
+
+        function drawCloud(x, y, width) {
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+            ctx.beginPath();
+            ctx.ellipse(x, y, width * 0.5, 20, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.ellipse(x - width * 0.25, y + 5, width * 0.3, 15, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.ellipse(x + width * 0.25, y + 5, width * 0.35, 18, 0, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        function drawPlatform(platform, screenY) {
+            const alpha = platform.fadeOut > 0 ? platform.fadeOut : 1;
+
+            // Platform glow
+            ctx.shadowColor = platform.touched ? '#ff6b6b' : '#a855f7';
+            ctx.shadowBlur = 15;
+
+            // Main platform
+            const gradient = ctx.createLinearGradient(
+                platform.x, screenY,
+                platform.x, screenY + CONFIG.platformHeight
+            );
+
+            if (platform.touched) {
+                gradient.addColorStop(0, `rgba(255, 107, 107, ${alpha})`);
+                gradient.addColorStop(1, `rgba(200, 80, 80, ${alpha})`);
+            } else {
+                gradient.addColorStop(0, `rgba(168, 85, 247, ${alpha})`);
+                gradient.addColorStop(1, `rgba(126, 58, 199, ${alpha})`);
+            }
+
+            ctx.fillStyle = gradient;
+            ctx.beginPath();
+            ctx.roundRect(platform.x, screenY, CONFIG.platformWidth, CONFIG.platformHeight, 8);
+            ctx.fill();
+
+            // Platform shine
+            ctx.shadowBlur = 0;
+            ctx.fillStyle = `rgba(255, 255, 255, ${0.3 * alpha})`;
+            ctx.beginPath();
+            ctx.roundRect(platform.x + 5, screenY + 2, CONFIG.platformWidth - 10, 4, 2);
+            ctx.fill();
+
+            // Grass/decoration on top
+            if (!platform.touched) {
+                ctx.fillStyle = `rgba(74, 222, 128, ${alpha})`;
+                for (let i = 0; i < 5; i++) {
+                    const grassX = platform.x + 10 + i * 12;
+                    ctx.beginPath();
+                    ctx.moveTo(grassX, screenY);
+                    ctx.lineTo(grassX + 3, screenY - 6);
+                    ctx.lineTo(grassX + 6, screenY);
+                    ctx.fill();
+                }
+            }
+        }
+
+        function drawBunny() {
+            const x = bunny.x + CONFIG.bunnyWidth / 2;
+            const y = bunny.y + CONFIG.bunnyHeight / 2;
+
+            ctx.save();
+            ctx.translate(x, y);
+
+            // Slight tilt based on velocity
+            const tilt = bunny.vx * 0.03;
+            ctx.rotate(tilt);
+
+            const size = CONFIG.bunnyWidth;
+
+            // Shadow
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+            ctx.beginPath();
+            ctx.ellipse(2, CONFIG.bunnyHeight / 2 - 5, size * 0.4, 8, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Body
+            ctx.fillStyle = '#f5f5f5';
+            ctx.beginPath();
+            ctx.ellipse(0, 8, size * 0.45, size * 0.4, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Body shading
+            ctx.fillStyle = '#e8e8e8';
+            ctx.beginPath();
+            ctx.ellipse(5, 10, size * 0.25, size * 0.25, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Tail
+            ctx.fillStyle = '#fff';
+            ctx.beginPath();
+            ctx.arc(-size * 0.35, 12, 8, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Head
+            ctx.fillStyle = '#f5f5f5';
+            ctx.beginPath();
+            ctx.ellipse(0, -8, size * 0.38, size * 0.35, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Ears
+            const earBounce = Math.sin(bunny.earPhase) * 3;
+            const earSquish = bunny.vy < 0 ? 1.1 : 0.9;
+
+            // Left ear
+            ctx.fillStyle = '#f5f5f5';
+            ctx.beginPath();
+            ctx.ellipse(-10, -28 + earBounce, 8, 18 * earSquish, -0.2, 0, Math.PI * 2);
+            ctx.fill();
+            // Inner ear
+            ctx.fillStyle = '#ffb6c1';
+            ctx.beginPath();
+            ctx.ellipse(-10, -26 + earBounce, 4, 12 * earSquish, -0.2, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Right ear
+            ctx.fillStyle = '#f5f5f5';
+            ctx.beginPath();
+            ctx.ellipse(10, -28 + earBounce * 0.8, 8, 18 * earSquish, 0.2, 0, Math.PI * 2);
+            ctx.fill();
+            // Inner ear
+            ctx.fillStyle = '#ffb6c1';
+            ctx.beginPath();
+            ctx.ellipse(10, -26 + earBounce * 0.8, 4, 12 * earSquish, 0.2, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Eyes
+            const blinking = bunny.blinkTimer % 180 < 10;
+            ctx.fillStyle = '#333';
+            if (blinking) {
+                ctx.fillRect(-10, -10, 8, 2);
+                ctx.fillRect(4, -10, 8, 2);
+            } else {
+                ctx.beginPath();
+                ctx.ellipse(-6, -10, 5, 6, 0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.ellipse(8, -10, 5, 6, 0, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Eye shine
+                ctx.fillStyle = '#fff';
+                ctx.beginPath();
+                ctx.arc(-4, -12, 2, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.arc(10, -12, 2, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            // Nose
+            ctx.fillStyle = '#ffb6c1';
+            ctx.beginPath();
+            ctx.ellipse(1, -2, 4, 3, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Mouth
+            ctx.strokeStyle = '#999';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.arc(-3, 2, 4, 0, Math.PI * 0.7);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.arc(5, 2, 4, Math.PI * 0.3, Math.PI);
+            ctx.stroke();
+
+            // Whiskers
+            ctx.strokeStyle = '#ccc';
+            ctx.lineWidth = 1;
+            // Left
+            ctx.beginPath();
+            ctx.moveTo(-8, -2);
+            ctx.lineTo(-20, -5);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(-8, 0);
+            ctx.lineTo(-20, 2);
+            ctx.stroke();
+            // Right
+            ctx.beginPath();
+            ctx.moveTo(10, -2);
+            ctx.lineTo(22, -5);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(10, 0);
+            ctx.lineTo(22, 2);
+            ctx.stroke();
+
+            // Feet (when jumping up)
+            if (bunny.vy < 0) {
+                ctx.fillStyle = '#f5f5f5';
+                ctx.beginPath();
+                ctx.ellipse(-8, 22, 6, 4, -0.3, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.ellipse(8, 22, 6, 4, 0.3, 0, Math.PI * 2);
+                ctx.fill();
+            } else {
+                // Feet tucked when falling
+                ctx.fillStyle = '#f5f5f5';
+                ctx.beginPath();
+                ctx.ellipse(-6, 18, 5, 3, 0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.ellipse(6, 18, 5, 3, 0, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            ctx.restore();
+        }
+
+        function gameLoop() {
+            update();
+            draw();
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Event Listeners
+        document.getElementById('startBtn').addEventListener('click', startGame);
+        document.getElementById('restartBtn').addEventListener('click', startGame);
+
+        function startGame() {
+            document.getElementById('startScreen').classList.add('hidden');
+            document.getElementById('gameOverScreen').classList.add('hidden');
+            document.getElementById('controls').classList.remove('hidden');
+            gameState = 'playing';
+            initGame();
+
+            // Request device orientation permission on iOS
+            if (typeof DeviceOrientationEvent !== 'undefined' &&
+                typeof DeviceOrientationEvent.requestPermission === 'function') {
+                DeviceOrientationEvent.requestPermission()
+                    .then(response => {
+                        if (response === 'granted') {
+                            useTilt = true;
+                        }
+                    })
+                    .catch(console.error);
+            }
+        }
+
+        // Keyboard controls
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowLeft' || e.key === 'a') {
+                moveLeft = true;
+                useTilt = false;
+            }
+            if (e.key === 'ArrowRight' || e.key === 'd') {
+                moveRight = true;
+                useTilt = false;
+            }
+        });
+
+        document.addEventListener('keyup', (e) => {
+            if (e.key === 'ArrowLeft' || e.key === 'a') {
+                moveLeft = false;
+            }
+            if (e.key === 'ArrowRight' || e.key === 'd') {
+                moveRight = false;
+            }
+        });
+
+        // Touch controls
+        const leftBtn = document.getElementById('leftBtn');
+        const rightBtn = document.getElementById('rightBtn');
+
+        leftBtn.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            moveLeft = true;
+            useTilt = false;
+        });
+        leftBtn.addEventListener('touchend', () => moveLeft = false);
+        leftBtn.addEventListener('mousedown', () => { moveLeft = true; useTilt = false; });
+        leftBtn.addEventListener('mouseup', () => moveLeft = false);
+        leftBtn.addEventListener('mouseleave', () => moveLeft = false);
+
+        rightBtn.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            moveRight = true;
+            useTilt = false;
+        });
+        rightBtn.addEventListener('touchend', () => moveRight = false);
+        rightBtn.addEventListener('mousedown', () => { moveRight = true; useTilt = false; });
+        rightBtn.addEventListener('mouseup', () => moveRight = false);
+        rightBtn.addEventListener('mouseleave', () => moveRight = false);
+
+        // Device orientation (tilt) controls
+        window.addEventListener('deviceorientation', (e) => {
+            if (gameState === 'playing' && e.gamma !== null) {
+                tiltX = e.gamma / 30; // Normalize tilt
+                tiltX = Math.max(-1, Math.min(1, tiltX));
+                if (Math.abs(tiltX) > 0.1) {
+                    useTilt = true;
+                }
+            }
+        });
+
+        // Initialize and start
+        initBackground();
+        gameLoop();
+    </script>
+</body>
+</html>
