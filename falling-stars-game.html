@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Star Catcher - Falling Stars Game</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #0a0a2a;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            touch-action: none;
+        }
+
+        #gameContainer {
+            position: relative;
+            max-width: 100vw;
+            max-height: 100vh;
+        }
+
+        #gameCanvas {
+            display: block;
+            border: 3px solid #ffd700;
+            box-shadow: 0 0 30px rgba(255, 215, 0, 0.5),
+                        inset 0 0 30px rgba(255, 215, 0, 0.1);
+            border-radius: 10px;
+        }
+
+        #startScreen, #gameOverScreen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: rgba(10, 10, 42, 0.95);
+            border-radius: 10px;
+            z-index: 10;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        h1 {
+            color: #ffd700;
+            font-size: 2.5rem;
+            text-shadow: 0 0 20px #ffd700, 0 0 40px #ff6b00;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        h2 {
+            color: #ff6b00;
+            font-size: 1.8rem;
+            text-shadow: 0 0 15px #ff6b00;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: #ffcc77;
+            font-size: 1rem;
+            margin-bottom: 30px;
+        }
+
+        .instructions {
+            color: #aaddff;
+            font-size: 1rem;
+            text-align: center;
+            line-height: 1.8;
+            margin-bottom: 30px;
+            padding: 0 20px;
+        }
+
+        .golden-info {
+            color: #ffd700;
+            font-size: 0.9rem;
+            text-shadow: 0 0 10px #ffd700;
+        }
+
+        .rainbow-info {
+            background: linear-gradient(90deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #8b00ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-size: 0.9rem;
+            font-weight: bold;
+        }
+
+        .score-display {
+            color: #ffd700;
+            font-size: 2rem;
+            text-shadow: 0 0 15px #ffd700;
+            margin: 20px 0;
+        }
+
+        .btn {
+            padding: 15px 40px;
+            font-size: 1.2rem;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 10px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #ffd700, #ff6b00);
+            color: #0a0a2a;
+            font-weight: bold;
+        }
+
+        .btn-primary:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 30px rgba(255, 215, 0, 0.8);
+        }
+
+        .high-score {
+            color: #00ff88;
+            font-size: 1.2rem;
+            margin-top: 10px;
+        }
+
+        .streak-info {
+            color: #ff77ff;
+            font-size: 1rem;
+            margin-top: 5px;
+        }
+
+        @media (max-width: 480px) {
+            h1 {
+                font-size: 1.8rem;
+            }
+            .instructions {
+                font-size: 0.85rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <canvas id="gameCanvas"></canvas>
+
+        <div id="startScreen">
+            <h1>Star Catcher</h1>
+            <p class="subtitle">Catch the Falling Stars!</p>
+            <div class="instructions">
+                Swipe or use arrow keys to move the basket<br>
+                Catch falling stars to score points<br><br>
+                <span class="golden-info">Golden stars = 5 points!</span><br>
+                <span class="rainbow-info">3 golden in a row = Rainbow Bonus!</span>
+            </div>
+            <button class="btn btn-primary" id="startBtn">START</button>
+        </div>
+
+        <div id="gameOverScreen" class="hidden">
+            <h2>GAME OVER</h2>
+            <div class="score-display">Score: <span id="finalScore">0</span></div>
+            <div class="high-score">Best: <span id="highScore">0</span></div>
+            <div class="streak-info">Max Golden Streak: <span id="maxStreak">0</span></div>
+            <button class="btn btn-primary" id="restartBtn">PLAY AGAIN</button>
+        </div>
+    </div>
+
+    <script>
+        // Game Configuration
+        const CONFIG = {
+            basketWidth: 80,
+            basketHeight: 50,
+            basketSpeed: 12,
+            starSize: 25,
+            starSpawnInterval: 800,
+            starFallSpeed: 3,
+            goldenChance: 0.25,
+            gameDuration: 60,
+            regularPoints: 1,
+            goldenPoints: 5,
+            rainbowBonusPoints: 25,
+            rainbowStreakRequired: 3
+        };
+
+        // Canvas Setup
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        function resizeCanvas() {
+            const maxWidth = Math.min(window.innerWidth - 20, 400);
+            const maxHeight = Math.min(window.innerHeight - 20, 700);
+            canvas.width = maxWidth;
+            canvas.height = maxHeight;
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        // Game State
+        let gameState = 'start';
+        let score = 0;
+        let highScore = localStorage.getItem('starCatcherHighScore') || 0;
+        let timeLeft = CONFIG.gameDuration;
+        let goldenStreak = 0;
+        let maxGoldenStreak = 0;
+        let rainbowActive = false;
+        let rainbowTimer = 0;
+
+        // Basket
+        const basket = {
+            x: 0,
+            y: 0,
+            targetX: 0,
+            bobPhase: 0
+        };
+
+        // Stars
+        let stars = [];
+        let sparkles = [];
+        let backgroundStars = [];
+        let lastSpawnTime = 0;
+        let gameTimer = null;
+
+        // Touch/Swipe tracking
+        let touchStartX = 0;
+        let isDragging = false;
+
+        // Initialize background stars
+        function initBackgroundStars() {
+            backgroundStars = [];
+            for (let i = 0; i < 50; i++) {
+                backgroundStars.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    size: Math.random() * 2 + 0.5,
+                    twinkle: Math.random() * Math.PI * 2,
+                    speed: Math.random() * 0.02 + 0.01
+                });
+            }
+        }
+
+        // Initialize game
+        function initGame() {
+            basket.x = canvas.width / 2 - CONFIG.basketWidth / 2;
+            basket.y = canvas.height - CONFIG.basketHeight - 20;
+            basket.targetX = basket.x;
+            basket.bobPhase = 0;
+            stars = [];
+            sparkles = [];
+            score = 0;
+            timeLeft = CONFIG.gameDuration;
+            goldenStreak = 0;
+            maxGoldenStreak = 0;
+            rainbowActive = false;
+            rainbowTimer = 0;
+            lastSpawnTime = 0;
+            initBackgroundStars();
+
+            if (gameTimer) clearInterval(gameTimer);
+            gameTimer = setInterval(() => {
+                if (gameState === 'playing') {
+                    timeLeft--;
+                    if (timeLeft <= 0) {
+                        gameOver();
+                    }
+                }
+            }, 1000);
+        }
+
+        // Create a falling star
+        function createStar() {
+            const isGolden = Math.random() < CONFIG.goldenChance;
+            stars.push({
+                x: Math.random() * (canvas.width - CONFIG.starSize * 2) + CONFIG.starSize,
+                y: -CONFIG.starSize,
+                size: CONFIG.starSize,
+                isGolden: isGolden,
+                rotation: 0,
+                rotationSpeed: (Math.random() - 0.5) * 0.1,
+                fallSpeed: CONFIG.starFallSpeed + Math.random() * 2,
+                wobble: Math.random() * Math.PI * 2,
+                wobbleSpeed: Math.random() * 0.05 + 0.02
+            });
+        }
+
+        // Create sparkle effect
+        function createSparkles(x, y, isGolden, isRainbow = false) {
+            const count = isRainbow ? 30 : (isGolden ? 15 : 8);
+            for (let i = 0; i < count; i++) {
+                const angle = (Math.PI * 2 * i) / count;
+                const speed = isRainbow ? 4 + Math.random() * 3 : 2 + Math.random() * 2;
+                let color;
+                if (isRainbow) {
+                    const hue = (i / count) * 360;
+                    color = `hsl(${hue}, 100%, 60%)`;
+                } else if (isGolden) {
+                    color = `hsl(${45 + Math.random() * 15}, 100%, ${60 + Math.random() * 20}%)`;
+                } else {
+                    color = `hsl(${200 + Math.random() * 40}, 80%, ${70 + Math.random() * 20}%)`;
+                }
+                sparkles.push({
+                    x: x,
+                    y: y,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed,
+                    life: 1,
+                    size: isRainbow ? 4 + Math.random() * 3 : 2 + Math.random() * 2,
+                    color: color
+                });
+            }
+        }
+
+        // Check collision between star and basket
+        function checkCatch(star) {
+            const basketCenterX = basket.x + CONFIG.basketWidth / 2;
+            const basketTop = basket.y + 10;
+            const starCenterX = star.x;
+            const starBottom = star.y + star.size / 2;
+
+            const horizontalDist = Math.abs(starCenterX - basketCenterX);
+            const verticalMatch = starBottom >= basketTop && starBottom <= basketTop + 20;
+
+            return horizontalDist < CONFIG.basketWidth / 2 && verticalMatch;
+        }
+
+        // Trigger rainbow bonus
+        function triggerRainbowBonus() {
+            rainbowActive = true;
+            rainbowTimer = 60;
+            score += CONFIG.rainbowBonusPoints;
+            createSparkles(basket.x + CONFIG.basketWidth / 2, basket.y, false, true);
+        }
+
+        // Update game state
+        function update() {
+            if (gameState !== 'playing') return;
+
+            const now = Date.now();
+
+            // Spawn stars
+            if (now - lastSpawnTime > CONFIG.starSpawnInterval) {
+                createStar();
+                lastSpawnTime = now;
+            }
+
+            // Move basket smoothly
+            const dx = basket.targetX - basket.x;
+            basket.x += dx * 0.15;
+            basket.bobPhase += 0.1;
+
+            // Keep basket in bounds
+            basket.x = Math.max(0, Math.min(canvas.width - CONFIG.basketWidth, basket.x));
+            basket.targetX = Math.max(0, Math.min(canvas.width - CONFIG.basketWidth, basket.targetX));
+
+            // Update rainbow timer
+            if (rainbowActive) {
+                rainbowTimer--;
+                if (rainbowTimer <= 0) {
+                    rainbowActive = false;
+                }
+            }
+
+            // Update stars
+            for (let i = stars.length - 1; i >= 0; i--) {
+                const star = stars[i];
+                star.y += star.fallSpeed;
+                star.rotation += star.rotationSpeed;
+                star.wobble += star.wobbleSpeed;
+                star.x += Math.sin(star.wobble) * 0.5;
+
+                // Check if caught
+                if (checkCatch(star)) {
+                    if (star.isGolden) {
+                        score += CONFIG.goldenPoints;
+                        goldenStreak++;
+                        if (goldenStreak > maxGoldenStreak) {
+                            maxGoldenStreak = goldenStreak;
+                        }
+                        if (goldenStreak >= CONFIG.rainbowStreakRequired) {
+                            triggerRainbowBonus();
+                            goldenStreak = 0;
+                        }
+                    } else {
+                        score += CONFIG.regularPoints;
+                        goldenStreak = 0;
+                    }
+                    createSparkles(star.x, star.y, star.isGolden);
+                    stars.splice(i, 1);
+                    continue;
+                }
+
+                // Remove if off screen
+                if (star.y > canvas.height + star.size) {
+                    if (star.isGolden) {
+                        goldenStreak = 0;
+                    }
+                    stars.splice(i, 1);
+                }
+            }
+
+            // Update sparkles
+            for (let i = sparkles.length - 1; i >= 0; i--) {
+                const sparkle = sparkles[i];
+                sparkle.x += sparkle.vx;
+                sparkle.y += sparkle.vy;
+                sparkle.vy += 0.1; // gravity
+                sparkle.life -= 0.02;
+                if (sparkle.life <= 0) {
+                    sparkles.splice(i, 1);
+                }
+            }
+
+            // Update background stars
+            backgroundStars.forEach(star => {
+                star.twinkle += star.speed;
+            });
+        }
+
+        // Draw a star shape
+        function drawStar(x, y, size, rotation, isGolden) {
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(rotation);
+
+            const spikes = 5;
+            const outerRadius = size / 2;
+            const innerRadius = size / 4;
+
+            // Glow effect
+            const glowSize = isGolden ? 20 : 12;
+            const gradient = ctx.createRadialGradient(0, 0, 0, 0, 0, glowSize);
+            if (isGolden) {
+                gradient.addColorStop(0, 'rgba(255, 215, 0, 0.8)');
+                gradient.addColorStop(0.5, 'rgba(255, 165, 0, 0.3)');
+                gradient.addColorStop(1, 'rgba(255, 215, 0, 0)');
+            } else {
+                gradient.addColorStop(0, 'rgba(200, 220, 255, 0.6)');
+                gradient.addColorStop(0.5, 'rgba(150, 180, 255, 0.2)');
+                gradient.addColorStop(1, 'rgba(100, 150, 255, 0)');
+            }
+            ctx.fillStyle = gradient;
+            ctx.beginPath();
+            ctx.arc(0, 0, glowSize, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Star shape
+            ctx.beginPath();
+            for (let i = 0; i < spikes * 2; i++) {
+                const radius = i % 2 === 0 ? outerRadius : innerRadius;
+                const angle = (i * Math.PI) / spikes - Math.PI / 2;
+                if (i === 0) {
+                    ctx.moveTo(Math.cos(angle) * radius, Math.sin(angle) * radius);
+                } else {
+                    ctx.lineTo(Math.cos(angle) * radius, Math.sin(angle) * radius);
+                }
+            }
+            ctx.closePath();
+
+            if (isGolden) {
+                const starGradient = ctx.createLinearGradient(-size/2, -size/2, size/2, size/2);
+                starGradient.addColorStop(0, '#fff7a0');
+                starGradient.addColorStop(0.3, '#ffd700');
+                starGradient.addColorStop(0.6, '#ffaa00');
+                starGradient.addColorStop(1, '#ffd700');
+                ctx.fillStyle = starGradient;
+                ctx.strokeStyle = '#ff8c00';
+            } else {
+                const starGradient = ctx.createLinearGradient(-size/2, -size/2, size/2, size/2);
+                starGradient.addColorStop(0, '#ffffff');
+                starGradient.addColorStop(0.5, '#aaccff');
+                starGradient.addColorStop(1, '#88aaee');
+                ctx.fillStyle = starGradient;
+                ctx.strokeStyle = '#6688cc';
+            }
+            ctx.lineWidth = 2;
+            ctx.fill();
+            ctx.stroke();
+
+            // Center sparkle
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+            ctx.beginPath();
+            ctx.arc(0, 0, size / 8, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.restore();
+        }
+
+        // Draw basket
+        function drawBasket() {
+            const x = basket.x;
+            const y = basket.y + Math.sin(basket.bobPhase) * 2;
+            const w = CONFIG.basketWidth;
+            const h = CONFIG.basketHeight;
+
+            ctx.save();
+
+            // Rainbow glow when active
+            if (rainbowActive) {
+                const rainbowGlow = ctx.createRadialGradient(x + w/2, y + h/2, 0, x + w/2, y + h/2, w);
+                const hueOffset = Date.now() * 0.5;
+                rainbowGlow.addColorStop(0, `hsla(${hueOffset % 360}, 100%, 50%, 0.5)`);
+                rainbowGlow.addColorStop(0.5, `hsla(${(hueOffset + 120) % 360}, 100%, 50%, 0.3)`);
+                rainbowGlow.addColorStop(1, 'transparent');
+                ctx.fillStyle = rainbowGlow;
+                ctx.beginPath();
+                ctx.arc(x + w/2, y + h/2, w, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            // Basket body (woven pattern)
+            ctx.beginPath();
+            ctx.moveTo(x + 10, y);
+            ctx.lineTo(x + w - 10, y);
+            ctx.lineTo(x + w, y + h);
+            ctx.lineTo(x, y + h);
+            ctx.closePath();
+
+            const basketGradient = ctx.createLinearGradient(x, y, x, y + h);
+            basketGradient.addColorStop(0, '#8B4513');
+            basketGradient.addColorStop(0.5, '#A0522D');
+            basketGradient.addColorStop(1, '#6B3410');
+            ctx.fillStyle = basketGradient;
+            ctx.fill();
+            ctx.strokeStyle = '#5D2906';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+
+            // Woven pattern
+            ctx.strokeStyle = '#D2691E';
+            ctx.lineWidth = 2;
+            for (let i = 1; i < 5; i++) {
+                ctx.beginPath();
+                ctx.moveTo(x + 5, y + i * 10);
+                ctx.lineTo(x + w - 5, y + i * 10);
+                ctx.stroke();
+            }
+            for (let i = 1; i < 6; i++) {
+                const xOffset = (i / 6) * (w - 20);
+                ctx.beginPath();
+                ctx.moveTo(x + 10 + xOffset, y + 5);
+                ctx.lineTo(x + xOffset, y + h - 5);
+                ctx.stroke();
+            }
+
+            // Basket rim
+            ctx.beginPath();
+            ctx.ellipse(x + w/2, y, w/2, 8, 0, 0, Math.PI * 2);
+            ctx.fillStyle = '#A0522D';
+            ctx.fill();
+            ctx.strokeStyle = '#5D2906';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // Rim highlight
+            ctx.beginPath();
+            ctx.ellipse(x + w/2, y - 2, w/2 - 5, 4, 0, Math.PI, Math.PI * 2);
+            ctx.strokeStyle = '#D2691E';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // Handle
+            ctx.beginPath();
+            ctx.moveTo(x + 15, y);
+            ctx.quadraticCurveTo(x + w/2, y - 35, x + w - 15, y);
+            ctx.strokeStyle = '#8B4513';
+            ctx.lineWidth = 5;
+            ctx.stroke();
+            ctx.strokeStyle = '#D2691E';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            ctx.restore();
+        }
+
+        // Draw function
+        function draw() {
+            // Clear canvas
+            ctx.fillStyle = '#0a0a2a';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Night sky gradient
+            const skyGradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+            skyGradient.addColorStop(0, '#0a0a2a');
+            skyGradient.addColorStop(0.5, '#1a1040');
+            skyGradient.addColorStop(1, '#2a1050');
+            ctx.fillStyle = skyGradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Background stars
+            backgroundStars.forEach(star => {
+                const alpha = 0.3 + Math.sin(star.twinkle) * 0.3 + 0.4;
+                ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
+                ctx.beginPath();
+                ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
+                ctx.fill();
+            });
+
+            // Draw falling stars
+            stars.forEach(star => {
+                drawStar(star.x, star.y, star.size, star.rotation, star.isGolden);
+            });
+
+            // Draw sparkles
+            sparkles.forEach(sparkle => {
+                ctx.save();
+                ctx.globalAlpha = sparkle.life;
+                ctx.fillStyle = sparkle.color;
+                ctx.beginPath();
+                ctx.arc(sparkle.x, sparkle.y, sparkle.size * sparkle.life, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Sparkle glow
+                ctx.shadowColor = sparkle.color;
+                ctx.shadowBlur = 5;
+                ctx.fill();
+                ctx.restore();
+            });
+
+            // Draw basket
+            drawBasket();
+
+            // Draw UI
+            if (gameState === 'playing') {
+                // Score
+                ctx.fillStyle = '#ffd700';
+                ctx.font = 'bold 28px Arial';
+                ctx.textAlign = 'left';
+                ctx.shadowColor = '#ffd700';
+                ctx.shadowBlur = 10;
+                ctx.fillText(`Score: ${score}`, 15, 35);
+                ctx.shadowBlur = 0;
+
+                // Timer
+                ctx.fillStyle = timeLeft <= 10 ? '#ff4444' : '#88aaff';
+                ctx.font = 'bold 24px Arial';
+                ctx.textAlign = 'right';
+                ctx.fillText(`${timeLeft}s`, canvas.width - 15, 35);
+
+                // Golden streak indicator
+                if (goldenStreak > 0) {
+                    ctx.fillStyle = '#ffd700';
+                    ctx.font = 'bold 18px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.shadowColor = '#ffd700';
+                    ctx.shadowBlur = 8;
+                    let streakText = '';
+                    for (let i = 0; i < goldenStreak; i++) {
+                        streakText += '\u2605 ';
+                    }
+                    ctx.fillText(streakText, canvas.width / 2, 60);
+                    ctx.shadowBlur = 0;
+                }
+
+                // Rainbow bonus text
+                if (rainbowActive) {
+                    ctx.font = 'bold 24px Arial';
+                    ctx.textAlign = 'center';
+                    const hue = Date.now() * 0.5 % 360;
+                    ctx.fillStyle = `hsl(${hue}, 100%, 60%)`;
+                    ctx.shadowColor = `hsl(${hue}, 100%, 50%)`;
+                    ctx.shadowBlur = 15;
+                    ctx.fillText('RAINBOW BONUS!', canvas.width / 2, 90);
+                    ctx.shadowBlur = 0;
+                }
+            }
+        }
+
+        // Game over
+        function gameOver() {
+            gameState = 'gameOver';
+            if (gameTimer) clearInterval(gameTimer);
+
+            if (score > highScore) {
+                highScore = score;
+                localStorage.setItem('starCatcherHighScore', highScore);
+            }
+
+            document.getElementById('finalScore').textContent = score;
+            document.getElementById('highScore').textContent = highScore;
+            document.getElementById('maxStreak').textContent = maxGoldenStreak;
+            document.getElementById('gameOverScreen').classList.remove('hidden');
+        }
+
+        // Game loop
+        function gameLoop() {
+            update();
+            draw();
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Event Listeners
+        document.getElementById('startBtn').addEventListener('click', () => {
+            document.getElementById('startScreen').classList.add('hidden');
+            gameState = 'playing';
+            initGame();
+        });
+
+        document.getElementById('restartBtn').addEventListener('click', () => {
+            document.getElementById('gameOverScreen').classList.add('hidden');
+            gameState = 'playing';
+            initGame();
+        });
+
+        // Keyboard controls
+        const keys = {};
+        document.addEventListener('keydown', (e) => {
+            keys[e.code] = true;
+            if (e.code === 'ArrowLeft' || e.code === 'ArrowRight') {
+                e.preventDefault();
+            }
+        });
+        document.addEventListener('keyup', (e) => {
+            keys[e.code] = false;
+        });
+
+        // Continuous keyboard movement
+        function handleKeyboardInput() {
+            if (gameState === 'playing') {
+                if (keys['ArrowLeft']) {
+                    basket.targetX -= CONFIG.basketSpeed;
+                }
+                if (keys['ArrowRight']) {
+                    basket.targetX += CONFIG.basketSpeed;
+                }
+            }
+            requestAnimationFrame(handleKeyboardInput);
+        }
+        handleKeyboardInput();
+
+        // Touch/Swipe controls
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            const touch = e.touches[0];
+            touchStartX = touch.clientX;
+            isDragging = true;
+        });
+
+        canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            if (!isDragging || gameState !== 'playing') return;
+
+            const touch = e.touches[0];
+            const rect = canvas.getBoundingClientRect();
+            const touchX = touch.clientX - rect.left;
+
+            // Move basket to follow finger
+            basket.targetX = touchX - CONFIG.basketWidth / 2;
+        });
+
+        canvas.addEventListener('touchend', () => {
+            isDragging = false;
+        });
+
+        // Mouse controls (for desktop)
+        canvas.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            const rect = canvas.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            basket.targetX = mouseX - CONFIG.basketWidth / 2;
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            if (!isDragging || gameState !== 'playing') return;
+            const rect = canvas.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            basket.targetX = mouseX - CONFIG.basketWidth / 2;
+        });
+
+        canvas.addEventListener('mouseup', () => {
+            isDragging = false;
+        });
+
+        canvas.addEventListener('mouseleave', () => {
+            isDragging = false;
+        });
+
+        // Initialize and start
+        initBackgroundStars();
+        gameLoop();
+    </script>
+</body>
+</html>
