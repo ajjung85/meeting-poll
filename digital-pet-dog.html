@@ -1,0 +1,1310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Paw Pals - Digital Pet Dog</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            touch-action: manipulation;
+            overflow-x: hidden;
+        }
+
+        .game-container {
+            max-width: 420px;
+            margin: 0 auto;
+            padding: 10px;
+            min-height: 100vh;
+        }
+
+        .header {
+            text-align: center;
+            padding: 15px;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 2rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            margin-bottom: 5px;
+        }
+
+        .header .dog-name {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+
+        /* Stats Panel */
+        .stats-panel {
+            background: rgba(255,255,255,0.95);
+            border-radius: 20px;
+            padding: 15px;
+            margin-bottom: 15px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+        }
+
+        .stat-row {
+            display: flex;
+            align-items: center;
+            margin: 10px 0;
+        }
+
+        .stat-icon {
+            width: 30px;
+            font-size: 1.3rem;
+            text-align: center;
+        }
+
+        .stat-label {
+            width: 70px;
+            font-weight: 600;
+            color: #555;
+            font-size: 0.9rem;
+        }
+
+        .stat-bar-container {
+            flex: 1;
+            height: 20px;
+            background: #e0e0e0;
+            border-radius: 10px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .stat-bar {
+            height: 100%;
+            border-radius: 10px;
+            transition: width 0.5s ease, background 0.3s ease;
+        }
+
+        .stat-bar.hunger { background: linear-gradient(90deg, #ff6b6b, #ee5a5a); }
+        .stat-bar.happiness { background: linear-gradient(90deg, #ffd93d, #f9c74f); }
+        .stat-bar.energy { background: linear-gradient(90deg, #6bcb77, #4ade80); }
+        .stat-bar.health { background: linear-gradient(90deg, #4ea8de, #48bfe3); }
+
+        .stat-value {
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 0.75rem;
+            font-weight: bold;
+            color: white;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+        }
+
+        /* Dog Display Area */
+        .dog-area {
+            background: linear-gradient(180deg, #87CEEB 0%, #98FB98 100%);
+            border-radius: 25px;
+            height: 280px;
+            position: relative;
+            margin-bottom: 15px;
+            overflow: hidden;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+        }
+
+        .ground {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 60px;
+            background: linear-gradient(180deg, #7cba5f 0%, #5a9a40 100%);
+        }
+
+        .sun {
+            position: absolute;
+            top: 20px;
+            right: 30px;
+            width: 50px;
+            height: 50px;
+            background: radial-gradient(circle, #fff9c4 0%, #ffeb3b 50%, #ffc107 100%);
+            border-radius: 50%;
+            box-shadow: 0 0 40px rgba(255, 235, 59, 0.6);
+        }
+
+        .cloud {
+            position: absolute;
+            background: white;
+            border-radius: 50px;
+            opacity: 0.9;
+        }
+
+        .cloud-1 {
+            top: 30px;
+            left: 20px;
+            width: 70px;
+            height: 30px;
+            animation: float 6s ease-in-out infinite;
+        }
+
+        .cloud-2 {
+            top: 60px;
+            left: 100px;
+            width: 50px;
+            height: 20px;
+            animation: float 8s ease-in-out infinite 1s;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateX(0); }
+            50% { transform: translateX(20px); }
+        }
+
+        /* Dog Canvas */
+        #dogCanvas {
+            position: absolute;
+            bottom: 50px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .mood-bubble {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: white;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 1.5rem;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .mood-bubble.visible {
+            opacity: 1;
+        }
+
+        /* Action Buttons */
+        .actions-panel {
+            background: rgba(255,255,255,0.95);
+            border-radius: 20px;
+            padding: 15px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+        }
+
+        .actions-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+
+        .action-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 15px 10px;
+            border: none;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: inherit;
+        }
+
+        .action-btn:active {
+            transform: scale(0.95);
+        }
+
+        .action-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .action-btn .icon {
+            font-size: 2rem;
+            margin-bottom: 5px;
+        }
+
+        .action-btn .label {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: white;
+        }
+
+        .btn-feed { background: linear-gradient(135deg, #ff6b6b, #ee5a5a); }
+        .btn-play { background: linear-gradient(135deg, #ffd93d, #f9c74f); }
+        .btn-walk { background: linear-gradient(135deg, #6bcb77, #4ade80); }
+        .btn-pet { background: linear-gradient(135deg, #f8a5c2, #f78fb3); }
+        .btn-sleep { background: linear-gradient(135deg, #a29bfe, #6c5ce7); }
+        .btn-wash { background: linear-gradient(135deg, #74b9ff, #0984e3); }
+
+        /* Breed Selection Screen */
+        .screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            padding: 20px;
+        }
+
+        .screen.hidden {
+            display: none;
+        }
+
+        .screen h2 {
+            color: white;
+            font-size: 2rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .screen p {
+            color: rgba(255,255,255,0.9);
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .breed-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            max-width: 350px;
+            width: 100%;
+            margin-bottom: 20px;
+        }
+
+        .breed-card {
+            background: rgba(255,255,255,0.95);
+            border-radius: 20px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 3px solid transparent;
+        }
+
+        .breed-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .breed-card.selected {
+            border-color: #ffd93d;
+            box-shadow: 0 0 20px rgba(255, 217, 61, 0.5);
+        }
+
+        .breed-preview {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 10px;
+        }
+
+        .breed-name {
+            font-weight: bold;
+            color: #333;
+            font-size: 1rem;
+        }
+
+        .name-input-container {
+            width: 100%;
+            max-width: 300px;
+            margin-bottom: 20px;
+        }
+
+        .name-input {
+            width: 100%;
+            padding: 15px;
+            font-size: 1.1rem;
+            border: none;
+            border-radius: 15px;
+            text-align: center;
+            font-family: inherit;
+        }
+
+        .name-input:focus {
+            outline: 3px solid #ffd93d;
+        }
+
+        .start-btn {
+            background: linear-gradient(135deg, #ffd93d, #f9c74f);
+            color: #333;
+            border: none;
+            padding: 18px 50px;
+            font-size: 1.3rem;
+            font-weight: bold;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: inherit;
+        }
+
+        .start-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 8px 25px rgba(255, 217, 61, 0.4);
+        }
+
+        /* Notifications */
+        .notification {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-100px);
+            background: white;
+            padding: 15px 25px;
+            border-radius: 30px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.2);
+            font-weight: 600;
+            color: #333;
+            z-index: 200;
+            transition: transform 0.4s ease;
+        }
+
+        .notification.visible {
+            transform: translateX(-50%) translateY(0);
+        }
+
+        /* Age/Level display */
+        .info-bar {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            padding: 0 5px;
+        }
+
+        .info-item {
+            background: rgba(255,255,255,0.2);
+            padding: 5px 15px;
+            border-radius: 15px;
+            color: white;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        /* Hearts animation */
+        .hearts-container {
+            position: absolute;
+            pointer-events: none;
+        }
+
+        .heart {
+            position: absolute;
+            font-size: 1.5rem;
+            animation: floatUp 1s ease-out forwards;
+            opacity: 0;
+        }
+
+        @keyframes floatUp {
+            0% {
+                opacity: 1;
+                transform: translateY(0) scale(0.5);
+            }
+            100% {
+                opacity: 0;
+                transform: translateY(-80px) scale(1.2);
+            }
+        }
+
+        /* Z particles for sleeping */
+        .zzz {
+            position: absolute;
+            font-size: 1.5rem;
+            animation: floatZzz 2s ease-out infinite;
+            color: #6c5ce7;
+        }
+
+        @keyframes floatZzz {
+            0% {
+                opacity: 0;
+                transform: translateY(0) translateX(0);
+            }
+            50% {
+                opacity: 1;
+            }
+            100% {
+                opacity: 0;
+                transform: translateY(-50px) translateX(30px);
+            }
+        }
+
+        @media (max-width: 380px) {
+            .header h1 {
+                font-size: 1.6rem;
+            }
+            .action-btn .icon {
+                font-size: 1.6rem;
+            }
+            .action-btn .label {
+                font-size: 0.7rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Breed Selection Screen -->
+    <div class="screen" id="breedScreen">
+        <h2>Choose Your Pup!</h2>
+        <p>Pick a furry friend to take care of</p>
+        <div class="breed-grid" id="breedGrid"></div>
+        <div class="name-input-container">
+            <input type="text" class="name-input" id="dogNameInput" placeholder="Name your dog..." maxlength="15">
+        </div>
+        <button class="start-btn" id="startGameBtn">Let's Go!</button>
+    </div>
+
+    <!-- Main Game Screen -->
+    <div class="game-container" id="gameScreen" style="display: none;">
+        <div class="header">
+            <h1>Paw Pals</h1>
+            <div class="dog-name" id="displayName">Buddy</div>
+        </div>
+
+        <div class="info-bar">
+            <div class="info-item" id="ageDisplay">Age: Puppy</div>
+            <div class="info-item" id="levelDisplay">Level: 1</div>
+            <div class="info-item" id="coinsDisplay">Coins: 0</div>
+        </div>
+
+        <div class="stats-panel">
+            <div class="stat-row">
+                <span class="stat-icon">🍖</span>
+                <span class="stat-label">Hunger</span>
+                <div class="stat-bar-container">
+                    <div class="stat-bar hunger" id="hungerBar" style="width: 100%"></div>
+                    <span class="stat-value" id="hungerValue">100</span>
+                </div>
+            </div>
+            <div class="stat-row">
+                <span class="stat-icon">😊</span>
+                <span class="stat-label">Happy</span>
+                <div class="stat-bar-container">
+                    <div class="stat-bar happiness" id="happinessBar" style="width: 100%"></div>
+                    <span class="stat-value" id="happinessValue">100</span>
+                </div>
+            </div>
+            <div class="stat-row">
+                <span class="stat-icon">⚡</span>
+                <span class="stat-label">Energy</span>
+                <div class="stat-bar-container">
+                    <div class="stat-bar energy" id="energyBar" style="width: 100%"></div>
+                    <span class="stat-value" id="energyValue">100</span>
+                </div>
+            </div>
+            <div class="stat-row">
+                <span class="stat-icon">❤️</span>
+                <span class="stat-label">Health</span>
+                <div class="stat-bar-container">
+                    <div class="stat-bar health" id="healthBar" style="width: 100%"></div>
+                    <span class="stat-value" id="healthValue">100</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="dog-area" id="dogArea">
+            <div class="sun"></div>
+            <div class="cloud cloud-1"></div>
+            <div class="cloud cloud-2"></div>
+            <div class="mood-bubble" id="moodBubble"></div>
+            <canvas id="dogCanvas" width="180" height="180"></canvas>
+            <div class="ground"></div>
+            <div class="hearts-container" id="heartsContainer"></div>
+        </div>
+
+        <div class="actions-panel">
+            <div class="actions-grid">
+                <button class="action-btn btn-feed" id="feedBtn" onclick="performAction('feed')">
+                    <span class="icon">🍖</span>
+                    <span class="label">Feed</span>
+                </button>
+                <button class="action-btn btn-play" id="playBtn" onclick="performAction('play')">
+                    <span class="icon">🎾</span>
+                    <span class="label">Play</span>
+                </button>
+                <button class="action-btn btn-walk" id="walkBtn" onclick="performAction('walk')">
+                    <span class="icon">🦮</span>
+                    <span class="label">Walk</span>
+                </button>
+                <button class="action-btn btn-pet" id="petBtn" onclick="performAction('pet')">
+                    <span class="icon">🤗</span>
+                    <span class="label">Pet</span>
+                </button>
+                <button class="action-btn btn-sleep" id="sleepBtn" onclick="performAction('sleep')">
+                    <span class="icon">😴</span>
+                    <span class="label">Sleep</span>
+                </button>
+                <button class="action-btn btn-wash" id="washBtn" onclick="performAction('wash')">
+                    <span class="icon">🛁</span>
+                    <span class="label">Wash</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="notification" id="notification"></div>
+
+    <script>
+        // Dog Breeds Configuration
+        const BREEDS = {
+            golden: {
+                name: 'Golden Retriever',
+                colors: { body: '#DAA520', ears: '#CD853F', nose: '#2F1810', tongue: '#FF69B4' }
+            },
+            husky: {
+                name: 'Husky',
+                colors: { body: '#708090', ears: '#2F4F4F', nose: '#1a1a1a', tongue: '#FF69B4', pattern: '#FFFFFF' }
+            },
+            corgi: {
+                name: 'Corgi',
+                colors: { body: '#DEB887', ears: '#D2691E', nose: '#2F1810', tongue: '#FF69B4', pattern: '#FFFFFF' }
+            },
+            dalmatian: {
+                name: 'Dalmatian',
+                colors: { body: '#FFFFFF', ears: '#1a1a1a', nose: '#1a1a1a', tongue: '#FF69B4', spots: '#1a1a1a' }
+            },
+            shiba: {
+                name: 'Shiba Inu',
+                colors: { body: '#D2691E', ears: '#8B4513', nose: '#1a1a1a', tongue: '#FF69B4', pattern: '#FFF8DC' }
+            },
+            poodle: {
+                name: 'Poodle',
+                colors: { body: '#DDA0DD', ears: '#BA55D3', nose: '#4a2040', tongue: '#FF69B4' }
+            }
+        };
+
+        // Game State
+        let gameState = {
+            dogName: 'Buddy',
+            breed: 'golden',
+            stats: {
+                hunger: 100,
+                happiness: 100,
+                energy: 100,
+                health: 100
+            },
+            level: 1,
+            experience: 0,
+            coins: 0,
+            age: 0, // in game-minutes
+            lastUpdate: Date.now(),
+            isSleeping: false,
+            isWalking: false,
+            mood: 'happy'
+        };
+
+        // Animation State
+        let animState = {
+            tailWag: 0,
+            headBob: 0,
+            tongueOut: false,
+            blinking: false,
+            jumpHeight: 0,
+            walkCycle: 0,
+            sleepBob: 0
+        };
+
+        const canvas = document.getElementById('dogCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Initialize breed selection
+        function initBreedSelection() {
+            const grid = document.getElementById('breedGrid');
+            grid.innerHTML = '';
+
+            Object.keys(BREEDS).forEach((breedKey, index) => {
+                const breed = BREEDS[breedKey];
+                const card = document.createElement('div');
+                card.className = 'breed-card' + (index === 0 ? ' selected' : '');
+                card.dataset.breed = breedKey;
+                card.innerHTML = `
+                    <canvas class="breed-preview" width="80" height="80" id="preview-${breedKey}"></canvas>
+                    <div class="breed-name">${breed.name}</div>
+                `;
+                card.addEventListener('click', () => selectBreed(breedKey));
+                grid.appendChild(card);
+            });
+
+            // Draw breed previews
+            Object.keys(BREEDS).forEach(breedKey => {
+                const previewCanvas = document.getElementById(`preview-${breedKey}`);
+                const previewCtx = previewCanvas.getContext('2d');
+                drawDogPreview(previewCtx, breedKey);
+            });
+
+            gameState.breed = 'golden';
+        }
+
+        function selectBreed(breedKey) {
+            document.querySelectorAll('.breed-card').forEach(card => {
+                card.classList.remove('selected');
+                if (card.dataset.breed === breedKey) {
+                    card.classList.add('selected');
+                }
+            });
+            gameState.breed = breedKey;
+        }
+
+        function drawDogPreview(ctx, breedKey) {
+            const colors = BREEDS[breedKey].colors;
+            ctx.clearRect(0, 0, 80, 80);
+
+            // Simple dog face preview
+            // Head
+            ctx.fillStyle = colors.body;
+            ctx.beginPath();
+            ctx.ellipse(40, 45, 30, 28, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Pattern for some breeds
+            if (colors.pattern) {
+                ctx.fillStyle = colors.pattern;
+                ctx.beginPath();
+                ctx.ellipse(40, 55, 18, 15, 0, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            // Spots for dalmatian
+            if (colors.spots) {
+                ctx.fillStyle = colors.spots;
+                [[25, 35, 5], [55, 40, 6], [35, 30, 4], [50, 55, 5]].forEach(([x, y, r]) => {
+                    ctx.beginPath();
+                    ctx.arc(x, y, r, 0, Math.PI * 2);
+                    ctx.fill();
+                });
+            }
+
+            // Ears
+            ctx.fillStyle = colors.ears;
+            ctx.beginPath();
+            ctx.ellipse(18, 25, 12, 18, -0.3, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.ellipse(62, 25, 12, 18, 0.3, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Eyes
+            ctx.fillStyle = '#2F1810';
+            ctx.beginPath();
+            ctx.arc(30, 42, 6, 0, Math.PI * 2);
+            ctx.arc(50, 42, 6, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Eye shine
+            ctx.fillStyle = 'white';
+            ctx.beginPath();
+            ctx.arc(32, 40, 2, 0, Math.PI * 2);
+            ctx.arc(52, 40, 2, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Nose
+            ctx.fillStyle = colors.nose;
+            ctx.beginPath();
+            ctx.ellipse(40, 55, 8, 6, 0, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        function startGame() {
+            const nameInput = document.getElementById('dogNameInput');
+            gameState.dogName = nameInput.value.trim() || 'Buddy';
+
+            document.getElementById('breedScreen').classList.add('hidden');
+            document.getElementById('gameScreen').style.display = 'block';
+            document.getElementById('displayName').textContent = gameState.dogName;
+
+            loadGame();
+            updateUI();
+            gameLoop();
+            startStatDecay();
+        }
+
+        // Draw the main dog
+        function drawDog() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            const colors = BREEDS[gameState.breed].colors;
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2 + 20;
+
+            ctx.save();
+
+            // Apply animations
+            const jumpOffset = Math.sin(animState.jumpHeight) * 15;
+            const walkOffset = gameState.isWalking ? Math.sin(animState.walkCycle) * 5 : 0;
+            const sleepOffset = gameState.isSleeping ? Math.sin(animState.sleepBob) * 3 : 0;
+
+            ctx.translate(0, -jumpOffset + walkOffset + sleepOffset);
+
+            if (gameState.isSleeping) {
+                // Draw sleeping dog (curled up)
+                drawSleepingDog(centerX, centerY + 30, colors);
+            } else {
+                // Draw standing/sitting dog
+                drawStandingDog(centerX, centerY, colors);
+            }
+
+            ctx.restore();
+        }
+
+        function drawStandingDog(x, y, colors) {
+            // Body
+            ctx.fillStyle = colors.body;
+            ctx.beginPath();
+            ctx.ellipse(x, y + 20, 45, 35, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Pattern overlay
+            if (colors.pattern) {
+                ctx.fillStyle = colors.pattern;
+                ctx.beginPath();
+                ctx.ellipse(x, y + 30, 30, 20, 0, 0, Math.PI);
+                ctx.fill();
+            }
+
+            // Spots for dalmatian
+            if (colors.spots) {
+                ctx.fillStyle = colors.spots;
+                [[-20, 10, 8], [15, 25, 10], [-10, 35, 7], [25, 5, 6]].forEach(([ox, oy, r]) => {
+                    ctx.beginPath();
+                    ctx.arc(x + ox, y + oy, r, 0, Math.PI * 2);
+                    ctx.fill();
+                });
+            }
+
+            // Tail with wag animation
+            ctx.save();
+            ctx.translate(x + 40, y + 10);
+            ctx.rotate(Math.sin(animState.tailWag) * 0.4);
+            ctx.fillStyle = colors.body;
+            ctx.beginPath();
+            ctx.ellipse(15, -10, 8, 20, 0.5, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+
+            // Back legs
+            ctx.fillStyle = colors.body;
+            ctx.beginPath();
+            ctx.ellipse(x + 25, y + 50, 12, 18, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.ellipse(x - 25, y + 50, 12, 18, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Front legs
+            ctx.beginPath();
+            ctx.ellipse(x + 15, y + 55, 10, 20, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.ellipse(x - 15, y + 55, 10, 20, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Paws
+            ctx.fillStyle = colors.pattern || '#DEB887';
+            [[15, 72], [-15, 72], [25, 65], [-25, 65]].forEach(([ox, oy]) => {
+                ctx.beginPath();
+                ctx.ellipse(x + ox, y + oy, 10, 6, 0, 0, Math.PI * 2);
+                ctx.fill();
+            });
+
+            // Head with bob animation
+            const headY = y - 25 + Math.sin(animState.headBob) * 3;
+
+            // Neck
+            ctx.fillStyle = colors.body;
+            ctx.beginPath();
+            ctx.ellipse(x, y - 5, 25, 20, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Head
+            ctx.beginPath();
+            ctx.ellipse(x, headY, 38, 32, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Muzzle pattern
+            if (colors.pattern) {
+                ctx.fillStyle = colors.pattern;
+                ctx.beginPath();
+                ctx.ellipse(x, headY + 15, 22, 18, 0, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            // Ears
+            ctx.fillStyle = colors.ears;
+            ctx.beginPath();
+            ctx.ellipse(x - 32, headY - 15, 15, 25, -0.3, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.ellipse(x + 32, headY - 15, 15, 25, 0.3, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Eyes
+            const eyeY = headY - 5;
+            ctx.fillStyle = '#2F1810';
+
+            if (animState.blinking) {
+                // Closed eyes
+                ctx.beginPath();
+                ctx.moveTo(x - 20, eyeY);
+                ctx.lineTo(x - 8, eyeY);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(x + 8, eyeY);
+                ctx.lineTo(x + 20, eyeY);
+                ctx.stroke();
+            } else {
+                // Open eyes
+                ctx.beginPath();
+                ctx.arc(x - 14, eyeY, 8, 0, Math.PI * 2);
+                ctx.arc(x + 14, eyeY, 8, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Eye shine
+                ctx.fillStyle = 'white';
+                ctx.beginPath();
+                ctx.arc(x - 11, eyeY - 2, 3, 0, Math.PI * 2);
+                ctx.arc(x + 17, eyeY - 2, 3, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Eyebrows (mood based)
+                ctx.strokeStyle = colors.ears;
+                ctx.lineWidth = 3;
+                ctx.lineCap = 'round';
+
+                if (gameState.mood === 'sad') {
+                    ctx.beginPath();
+                    ctx.moveTo(x - 22, eyeY - 12);
+                    ctx.lineTo(x - 8, eyeY - 15);
+                    ctx.stroke();
+                    ctx.beginPath();
+                    ctx.moveTo(x + 8, eyeY - 15);
+                    ctx.lineTo(x + 22, eyeY - 12);
+                    ctx.stroke();
+                }
+            }
+
+            // Nose
+            ctx.fillStyle = colors.nose;
+            ctx.beginPath();
+            ctx.ellipse(x, headY + 12, 12, 9, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Nose shine
+            ctx.fillStyle = 'rgba(255,255,255,0.3)';
+            ctx.beginPath();
+            ctx.ellipse(x - 3, headY + 10, 4, 3, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Mouth and tongue
+            if (animState.tongueOut || gameState.stats.energy < 50) {
+                ctx.fillStyle = colors.tongue;
+                ctx.beginPath();
+                ctx.ellipse(x, headY + 28, 10, 15, 0, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Tongue line
+                ctx.strokeStyle = '#FF1493';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(x, headY + 20);
+                ctx.lineTo(x, headY + 35);
+                ctx.stroke();
+            }
+
+            // Mouth curve
+            ctx.strokeStyle = colors.nose;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(x, headY + 18, 8, 0.2, Math.PI - 0.2);
+            ctx.stroke();
+        }
+
+        function drawSleepingDog(x, y, colors) {
+            // Curled up body
+            ctx.fillStyle = colors.body;
+            ctx.beginPath();
+            ctx.ellipse(x, y, 55, 40, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Pattern overlay
+            if (colors.pattern) {
+                ctx.fillStyle = colors.pattern;
+                ctx.beginPath();
+                ctx.ellipse(x + 10, y + 10, 25, 18, 0.3, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            // Tail curled around
+            ctx.fillStyle = colors.body;
+            ctx.beginPath();
+            ctx.ellipse(x + 45, y - 10, 10, 25, 0.8, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Head resting
+            ctx.beginPath();
+            ctx.ellipse(x - 30, y - 15, 30, 25, -0.2, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Muzzle
+            if (colors.pattern) {
+                ctx.fillStyle = colors.pattern;
+                ctx.beginPath();
+                ctx.ellipse(x - 35, y - 5, 15, 12, 0, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            // Ears (flopped)
+            ctx.fillStyle = colors.ears;
+            ctx.beginPath();
+            ctx.ellipse(x - 50, y - 25, 12, 18, -0.5, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.ellipse(x - 15, y - 30, 12, 15, 0.3, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Closed eyes
+            ctx.strokeStyle = '#2F1810';
+            ctx.lineWidth = 2;
+            ctx.lineCap = 'round';
+            ctx.beginPath();
+            ctx.arc(x - 40, y - 18, 6, 0.3, Math.PI - 0.3);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.arc(x - 25, y - 20, 6, 0.3, Math.PI - 0.3);
+            ctx.stroke();
+
+            // Nose
+            ctx.fillStyle = colors.nose;
+            ctx.beginPath();
+            ctx.ellipse(x - 50, y - 8, 8, 6, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Z's for sleeping
+            const zzzContainer = document.getElementById('dogArea');
+            const existingZzz = zzzContainer.querySelector('.zzz');
+            if (!existingZzz) {
+                for (let i = 0; i < 3; i++) {
+                    const zzz = document.createElement('span');
+                    zzz.className = 'zzz';
+                    zzz.textContent = 'Z';
+                    zzz.style.left = (canvas.offsetLeft + x - 20 + i * 15) + 'px';
+                    zzz.style.top = (canvas.offsetTop + y - 60) + 'px';
+                    zzz.style.animationDelay = (i * 0.5) + 's';
+                    zzz.style.fontSize = (1.2 + i * 0.3) + 'rem';
+                    zzzContainer.appendChild(zzz);
+                }
+            }
+        }
+
+        // Perform actions
+        function performAction(action) {
+            if (gameState.isSleeping && action !== 'sleep') {
+                showNotification("💤 Shh... let them sleep!");
+                return;
+            }
+
+            let message = '';
+
+            switch(action) {
+                case 'feed':
+                    if (gameState.stats.hunger >= 100) {
+                        message = "🍖 Already full!";
+                    } else {
+                        gameState.stats.hunger = Math.min(100, gameState.stats.hunger + 30);
+                        gameState.stats.health = Math.min(100, gameState.stats.health + 5);
+                        gameState.experience += 10;
+                        gameState.coins += 5;
+                        message = "🍖 Yummy!";
+                        showMoodBubble("😋");
+                        triggerJump();
+                    }
+                    break;
+
+                case 'play':
+                    if (gameState.stats.energy < 20) {
+                        message = "😴 Too tired to play!";
+                    } else {
+                        gameState.stats.happiness = Math.min(100, gameState.stats.happiness + 25);
+                        gameState.stats.energy = Math.max(0, gameState.stats.energy - 15);
+                        gameState.stats.hunger = Math.max(0, gameState.stats.hunger - 10);
+                        gameState.experience += 15;
+                        gameState.coins += 10;
+                        message = "🎾 So fun!";
+                        showMoodBubble("🥳");
+                        triggerJump();
+                        spawnHearts();
+                    }
+                    break;
+
+                case 'walk':
+                    if (gameState.stats.energy < 30) {
+                        message = "😴 Too tired for a walk!";
+                    } else if (gameState.isWalking) {
+                        message = "🦮 Already walking!";
+                    } else {
+                        startWalk();
+                        message = "🦮 Let's go!";
+                    }
+                    break;
+
+                case 'pet':
+                    gameState.stats.happiness = Math.min(100, gameState.stats.happiness + 15);
+                    gameState.experience += 5;
+                    message = "🤗 *happy tail wag*";
+                    showMoodBubble("🥰");
+                    spawnHearts();
+                    break;
+
+                case 'sleep':
+                    if (gameState.isSleeping) {
+                        gameState.isSleeping = false;
+                        removeZzz();
+                        message = "☀️ Good morning!";
+                        showMoodBubble("😊");
+                    } else {
+                        gameState.isSleeping = true;
+                        message = "😴 Sweet dreams...";
+                        showMoodBubble("💤");
+                    }
+                    break;
+
+                case 'wash':
+                    gameState.stats.health = Math.min(100, gameState.stats.health + 20);
+                    gameState.stats.happiness = Math.min(100, gameState.stats.happiness + 10);
+                    gameState.experience += 10;
+                    gameState.coins += 5;
+                    message = "🛁 Squeaky clean!";
+                    showMoodBubble("✨");
+                    triggerJump();
+                    break;
+            }
+
+            checkLevelUp();
+            updateUI();
+            saveGame();
+            showNotification(message);
+        }
+
+        function triggerJump() {
+            animState.jumpHeight = Math.PI;
+        }
+
+        function startWalk() {
+            gameState.isWalking = true;
+            gameState.stats.happiness = Math.min(100, gameState.stats.happiness + 20);
+            gameState.stats.energy = Math.max(0, gameState.stats.energy - 20);
+            gameState.stats.hunger = Math.max(0, gameState.stats.hunger - 15);
+            gameState.stats.health = Math.min(100, gameState.stats.health + 10);
+            gameState.experience += 25;
+            gameState.coins += 15;
+
+            showMoodBubble("🐕");
+
+            setTimeout(() => {
+                gameState.isWalking = false;
+                showNotification("🏠 Back from walk!");
+                updateUI();
+            }, 5000);
+        }
+
+        function removeZzz() {
+            const zzzElements = document.querySelectorAll('.zzz');
+            zzzElements.forEach(el => el.remove());
+        }
+
+        function spawnHearts() {
+            const container = document.getElementById('heartsContainer');
+            for (let i = 0; i < 5; i++) {
+                const heart = document.createElement('span');
+                heart.className = 'heart';
+                heart.textContent = '❤️';
+                heart.style.left = (Math.random() * 150 + 15) + 'px';
+                heart.style.top = '100px';
+                heart.style.animationDelay = (i * 0.1) + 's';
+                container.appendChild(heart);
+
+                setTimeout(() => heart.remove(), 1000);
+            }
+        }
+
+        function showMoodBubble(emoji) {
+            const bubble = document.getElementById('moodBubble');
+            bubble.textContent = emoji;
+            bubble.classList.add('visible');
+
+            setTimeout(() => {
+                bubble.classList.remove('visible');
+            }, 2000);
+        }
+
+        function showNotification(message) {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.classList.add('visible');
+
+            setTimeout(() => {
+                notification.classList.remove('visible');
+            }, 2500);
+        }
+
+        // Update UI
+        function updateUI() {
+            const stats = gameState.stats;
+
+            // Update stat bars
+            ['hunger', 'happiness', 'energy', 'health'].forEach(stat => {
+                const bar = document.getElementById(stat + 'Bar');
+                const value = document.getElementById(stat + 'Value');
+                bar.style.width = stats[stat] + '%';
+                value.textContent = Math.round(stats[stat]);
+            });
+
+            // Update info displays
+            document.getElementById('ageDisplay').textContent = `Age: ${getAgeString()}`;
+            document.getElementById('levelDisplay').textContent = `Level: ${gameState.level}`;
+            document.getElementById('coinsDisplay').textContent = `Coins: ${gameState.coins}`;
+
+            // Update mood
+            updateMood();
+
+            // Disable buttons based on conditions
+            document.getElementById('playBtn').disabled = gameState.stats.energy < 20 || gameState.isSleeping;
+            document.getElementById('walkBtn').disabled = gameState.stats.energy < 30 || gameState.isWalking || gameState.isSleeping;
+        }
+
+        function getAgeString() {
+            const days = Math.floor(gameState.age / 1440); // 1440 mins in a day
+            if (days < 1) return 'Puppy';
+            if (days < 7) return `${days}d Puppy`;
+            if (days < 30) return 'Young';
+            if (days < 90) return 'Adult';
+            return 'Senior';
+        }
+
+        function updateMood() {
+            const avg = (gameState.stats.hunger + gameState.stats.happiness +
+                        gameState.stats.energy + gameState.stats.health) / 4;
+
+            if (avg >= 80) gameState.mood = 'happy';
+            else if (avg >= 50) gameState.mood = 'neutral';
+            else gameState.mood = 'sad';
+
+            animState.tongueOut = gameState.mood === 'happy';
+        }
+
+        function checkLevelUp() {
+            const expNeeded = gameState.level * 100;
+            if (gameState.experience >= expNeeded) {
+                gameState.level++;
+                gameState.experience -= expNeeded;
+                showNotification(`🎉 Level Up! Now level ${gameState.level}!`);
+            }
+        }
+
+        // Stat decay over time
+        function startStatDecay() {
+            setInterval(() => {
+                if (!gameState.isSleeping) {
+                    gameState.stats.hunger = Math.max(0, gameState.stats.hunger - 0.5);
+                    gameState.stats.happiness = Math.max(0, gameState.stats.happiness - 0.3);
+                    gameState.stats.energy = Math.max(0, gameState.stats.energy - 0.2);
+                } else {
+                    // Recover energy while sleeping
+                    gameState.stats.energy = Math.min(100, gameState.stats.energy + 1);
+                }
+
+                // Health affected by other stats
+                const avgStats = (gameState.stats.hunger + gameState.stats.happiness + gameState.stats.energy) / 3;
+                if (avgStats < 30) {
+                    gameState.stats.health = Math.max(0, gameState.stats.health - 0.2);
+                }
+
+                gameState.age += 1; // 1 game minute per real second
+
+                updateUI();
+                saveGame();
+            }, 1000);
+        }
+
+        // Animation loop
+        function gameLoop() {
+            // Update animations
+            animState.tailWag += gameState.mood === 'happy' ? 0.3 : 0.1;
+            animState.headBob += 0.05;
+            animState.sleepBob += 0.03;
+
+            if (gameState.isWalking) {
+                animState.walkCycle += 0.2;
+            }
+
+            if (animState.jumpHeight > 0) {
+                animState.jumpHeight = Math.max(0, animState.jumpHeight - 0.15);
+            }
+
+            // Random blinking
+            if (Math.random() < 0.005) {
+                animState.blinking = true;
+                setTimeout(() => animState.blinking = false, 150);
+            }
+
+            drawDog();
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Save/Load
+        function saveGame() {
+            localStorage.setItem('pawPalsGame', JSON.stringify(gameState));
+        }
+
+        function loadGame() {
+            const saved = localStorage.getItem('pawPalsGame');
+            if (saved) {
+                const loaded = JSON.parse(saved);
+                // Only load if same dog
+                if (loaded.dogName === gameState.dogName && loaded.breed === gameState.breed) {
+                    gameState = { ...gameState, ...loaded };
+
+                    // Calculate time passed and decay stats
+                    const timePassed = (Date.now() - loaded.lastUpdate) / 1000 / 60; // minutes
+                    if (timePassed > 1) {
+                        const decay = Math.min(timePassed * 0.5, 50);
+                        gameState.stats.hunger = Math.max(0, gameState.stats.hunger - decay);
+                        gameState.stats.happiness = Math.max(0, gameState.stats.happiness - decay * 0.8);
+                    }
+                }
+            }
+            gameState.lastUpdate = Date.now();
+            gameState.isSleeping = false;
+            gameState.isWalking = false;
+        }
+
+        // Touch dog to pet
+        canvas.addEventListener('click', () => {
+            if (!gameState.isSleeping) {
+                performAction('pet');
+            }
+        });
+
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            if (!gameState.isSleeping) {
+                performAction('pet');
+            }
+        });
+
+        // Initialize
+        document.getElementById('startGameBtn').addEventListener('click', startGame);
+        document.getElementById('dogNameInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') startGame();
+        });
+
+        initBreedSelection();
+    </script>
+</body>
+</html>
