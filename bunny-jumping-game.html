@@ -297,8 +297,8 @@
             bunny.x = canvas.width / 2 - CONFIG.bunnyWidth / 2;
             bunny.y = canvas.height - 100;
             bunny.vx = 0;
-            bunny.vy = 0;
-            bunny.isJumping = false;
+            bunny.vy = CONFIG.jumpForce; // Start with an upward jump!
+            bunny.isJumping = true;
 
             platforms = [];
             particles = [];
@@ -308,19 +308,18 @@
 
             initBackground();
 
-            // Create initial platforms
-            // First platform directly under bunny
+            // Create initial platforms - first one under the bunny's starting position
             platforms.push({
                 x: canvas.width / 2 - CONFIG.platformWidth / 2,
-                y: canvas.height - 50,
+                y: canvas.height - 40,
                 touched: false,
                 fadeOut: 0,
-                originalY: canvas.height - 50
+                originalY: canvas.height - 40
             });
 
-            // Generate more platforms going up
-            for (let i = 1; i < CONFIG.platformCount; i++) {
-                createPlatform(canvas.height - 50 - i * 90);
+            // Generate more platforms going up with good spacing
+            for (let i = 1; i < CONFIG.platformCount + 4; i++) {
+                createPlatform(canvas.height - 40 - i * 80);
             }
         }
 
@@ -443,11 +442,13 @@
                 }
             }
 
-            // Generate new platforms above
-            while (platforms.length < CONFIG.platformCount) {
-                const highestPlatform = platforms.reduce((min, p) =>
+            // Generate new platforms above (exclude fading platforms from calculation)
+            while (platforms.filter(p => p.fadeOut === 0).length < CONFIG.platformCount) {
+                const activePlatforms = platforms.filter(p => p.fadeOut === 0);
+                const highestPlatform = activePlatforms.reduce((min, p) =>
                     p.y < min ? p.y : min, Infinity);
-                createPlatform(highestPlatform - 80 - Math.random() * 40);
+                // Generate new platform above the highest active one
+                createPlatform(highestPlatform - 70 - Math.random() * 30);
             }
 
             // Update particles
