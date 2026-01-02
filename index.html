@@ -56,6 +56,16 @@
             box-shadow: 0 10px 30px rgba(255, 105, 180, 0.3);
             background: linear-gradient(180deg, #87CEEB 0%, #B0E0E6 60%, #90EE90 100%);
             cursor: pointer;
+            display: block;
+        }
+
+        #game-area {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+            width: 100%;
+            padding: 10px;
         }
 
         #menu-screen, #level-select, #game-over-screen, #win-screen {
@@ -1101,73 +1111,72 @@
         }
 
         function drawPlayer() {
-            ctx.save();
-            ctx.translate(player.x + player.width / 2, player.y + player.height / 2);
-            ctx.rotate(player.rotation);
+            const px = player.x;
+            const py = player.y;
+            const pw = player.width;
+            const ph = player.height;
 
-            // Draw unicorn body (rounded square) - pink
-            ctx.fillStyle = '#FF69B4';
-            drawRoundedRect(ctx, -player.width / 2, -player.height / 2, player.width, player.height, 10);
-            ctx.fill();
-
-            // White face
-            ctx.fillStyle = 'white';
-            drawRoundedRect(ctx, -player.width / 2 + 5, -player.height / 2 + 5, player.width - 10, player.height - 15, 8);
-            ctx.fill();
-
-            // Horn (golden triangle)
-            ctx.fillStyle = '#FFD700';
-            ctx.beginPath();
-            ctx.moveTo(0, -player.height / 2 - 15);
-            ctx.lineTo(-8, -player.height / 2 + 5);
-            ctx.lineTo(8, -player.height / 2 + 5);
-            ctx.closePath();
-            ctx.fill();
-
-            // Eyes (black circles)
-            ctx.fillStyle = '#333';
-            ctx.beginPath();
-            ctx.arc(-8, -5, 5, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.beginPath();
-            ctx.arc(12, -5, 5, 0, Math.PI * 2);
-            ctx.fill();
-
-            // Eye sparkles (white dots)
-            ctx.fillStyle = 'white';
-            ctx.beginPath();
-            ctx.arc(-6, -7, 2, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.beginPath();
-            ctx.arc(14, -7, 2, 0, Math.PI * 2);
-            ctx.fill();
-
-            // Blush (pink circles)
-            ctx.fillStyle = 'rgba(255, 182, 193, 0.7)';
-            ctx.beginPath();
-            ctx.arc(-15, 5, 5, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.beginPath();
-            ctx.arc(18, 5, 5, 0, Math.PI * 2);
-            ctx.fill();
-
-            // Smile
-            ctx.strokeStyle = '#FF69B4';
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.arc(3, 8, 8, 0.1 * Math.PI, 0.9 * Math.PI);
-            ctx.stroke();
-
-            // Mane (rainbow circles behind)
-            const maneColors = ['#FF0000', '#FF7F00', '#FFFF00', '#00FF00', '#0000FF', '#9400D3'];
+            // Draw rainbow mane trail behind
+            const maneColors = ['#9400D3', '#0000FF', '#00FF00', '#FFFF00', '#FF7F00', '#FF0000'];
             for (let i = 0; i < maneColors.length; i++) {
                 ctx.fillStyle = maneColors[i];
                 ctx.beginPath();
-                ctx.arc(-player.width / 2 - 5 - i * 3, -10 + i * 5, 6, 0, Math.PI * 2);
+                ctx.arc(px - 5 - i * 4, py + 15 + i * 4, 7, 0, Math.PI * 2);
                 ctx.fill();
             }
 
-            ctx.restore();
+            // Draw unicorn body (pink square)
+            ctx.fillStyle = '#FF69B4';
+            ctx.fillRect(px, py, pw, ph);
+
+            // White face area
+            ctx.fillStyle = 'white';
+            ctx.fillRect(px + 5, py + 5, pw - 10, ph - 15);
+
+            // Horn (golden triangle on top)
+            ctx.fillStyle = '#FFD700';
+            ctx.beginPath();
+            ctx.moveTo(px + pw/2, py - 15);
+            ctx.lineTo(px + pw/2 - 8, py + 5);
+            ctx.lineTo(px + pw/2 + 8, py + 5);
+            ctx.closePath();
+            ctx.fill();
+
+            // Left eye
+            ctx.fillStyle = '#333';
+            ctx.beginPath();
+            ctx.arc(px + 15, py + 20, 6, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Right eye
+            ctx.beginPath();
+            ctx.arc(px + 35, py + 20, 6, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Eye sparkles
+            ctx.fillStyle = 'white';
+            ctx.beginPath();
+            ctx.arc(px + 17, py + 18, 2, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(px + 37, py + 18, 2, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Rosy cheeks
+            ctx.fillStyle = 'rgba(255, 150, 180, 0.6)';
+            ctx.beginPath();
+            ctx.arc(px + 8, py + 30, 5, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(px + 42, py + 30, 5, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Cute smile
+            ctx.strokeStyle = '#FF69B4';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(px + 25, py + 32, 8, 0.2 * Math.PI, 0.8 * Math.PI);
+            ctx.stroke();
         }
 
         function drawObstacle(obs, screenX) {
