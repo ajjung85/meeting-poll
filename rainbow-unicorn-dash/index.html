@@ -552,127 +552,130 @@
         let particles = [];
         let decorations = [];
 
-        // Obstacle generation functions
+        // Ground is at y=350, so obstacles need their base at y=350
+        // Spike: tip at y, base at y+height, so y = 350 - height
+        // Block: top at y, bottom at y+height, so y = 350 - height
         function generateEasyObstacles() {
             const obs = [];
-            let x = 500;
+            let x = 400;
             while (x < 2800) {
                 const type = Math.random() < 0.7 ? 'spike' : 'block';
+                const height = type === 'spike' ? 50 : 90;
                 obs.push({
                     x: x,
-                    y: type === 'spike' ? 320 : 280,
-                    width: type === 'spike' ? 40 : 50,
-                    height: type === 'spike' ? 40 : 70,
+                    y: 350 - height,  // Base sits on ground at y=350
+                    width: type === 'spike' ? 50 : 60,
+                    height: height,
                     type: type
                 });
-                x += 250 + Math.random() * 150; // Wide spacing
+                x += 300 + Math.random() * 150; // Wide spacing for easy level
             }
             return obs;
         }
 
         function generateMediumObstacles() {
             const obs = [];
-            let x = 500;
+            let x = 400;
             while (x < 3800) {
                 const rand = Math.random();
                 if (rand < 0.5) {
-                    obs.push({ x: x, y: 320, width: 40, height: 40, type: 'spike' });
+                    obs.push({ x: x, y: 300, width: 50, height: 50, type: 'spike' });
                 } else if (rand < 0.75) {
-                    obs.push({ x: x, y: 280, width: 50, height: 70, type: 'block' });
+                    obs.push({ x: x, y: 260, width: 60, height: 90, type: 'block' });
                 } else {
                     // Double spike
-                    obs.push({ x: x, y: 320, width: 40, height: 40, type: 'spike' });
-                    obs.push({ x: x + 50, y: 320, width: 40, height: 40, type: 'spike' });
+                    obs.push({ x: x, y: 300, width: 50, height: 50, type: 'spike' });
+                    obs.push({ x: x + 60, y: 300, width: 50, height: 50, type: 'spike' });
                 }
-                x += 180 + Math.random() * 120;
+                x += 220 + Math.random() * 120;
             }
             return obs;
         }
 
         function generateHardObstacles() {
             const obs = [];
-            let x = 500;
+            let x = 400;
             while (x < 4800) {
                 const rand = Math.random();
                 if (rand < 0.3) {
-                    obs.push({ x: x, y: 320, width: 40, height: 40, type: 'spike' });
+                    obs.push({ x: x, y: 300, width: 50, height: 50, type: 'spike' });
                 } else if (rand < 0.5) {
                     // Triple spike
                     for (let i = 0; i < 3; i++) {
-                        obs.push({ x: x + i * 45, y: 320, width: 40, height: 40, type: 'spike' });
+                        obs.push({ x: x + i * 55, y: 300, width: 50, height: 50, type: 'spike' });
                     }
                 } else if (rand < 0.7) {
-                    obs.push({ x: x, y: 260, width: 60, height: 90, type: 'block' });
+                    obs.push({ x: x, y: 250, width: 70, height: 100, type: 'block' });
                 } else {
                     // Gap with floating platform
-                    obs.push({ x: x, y: 320, width: 40, height: 40, type: 'spike' });
-                    obs.push({ x: x + 100, y: 250, width: 80, height: 20, type: 'platform' });
-                    obs.push({ x: x + 200, y: 320, width: 40, height: 40, type: 'spike' });
+                    obs.push({ x: x, y: 300, width: 50, height: 50, type: 'spike' });
+                    obs.push({ x: x + 120, y: 240, width: 100, height: 25, type: 'platform' });
+                    obs.push({ x: x + 240, y: 300, width: 50, height: 50, type: 'spike' });
                 }
-                x += 150 + Math.random() * 100;
+                x += 180 + Math.random() * 100;
             }
             return obs;
         }
 
         function generateExpertObstacles() {
             const obs = [];
-            let x = 500;
+            let x = 400;
             while (x < 5800) {
                 const rand = Math.random();
                 if (rand < 0.25) {
                     // Spike row
                     for (let i = 0; i < 4; i++) {
-                        obs.push({ x: x + i * 42, y: 320, width: 40, height: 40, type: 'spike' });
+                        obs.push({ x: x + i * 52, y: 300, width: 50, height: 50, type: 'spike' });
                     }
                 } else if (rand < 0.45) {
-                    obs.push({ x: x, y: 240, width: 70, height: 110, type: 'block' });
+                    obs.push({ x: x, y: 230, width: 80, height: 120, type: 'block' });
                 } else if (rand < 0.65) {
                     // Low ceiling
-                    obs.push({ x: x, y: 150, width: 120, height: 30, type: 'ceiling' });
-                    obs.push({ x: x + 40, y: 320, width: 40, height: 40, type: 'spike' });
+                    obs.push({ x: x, y: 140, width: 140, height: 40, type: 'ceiling' });
+                    obs.push({ x: x + 50, y: 300, width: 50, height: 50, type: 'spike' });
                 } else {
                     // Complex pattern
-                    obs.push({ x: x, y: 320, width: 40, height: 40, type: 'spike' });
-                    obs.push({ x: x + 80, y: 280, width: 50, height: 70, type: 'block' });
-                    obs.push({ x: x + 150, y: 320, width: 40, height: 40, type: 'spike' });
+                    obs.push({ x: x, y: 300, width: 50, height: 50, type: 'spike' });
+                    obs.push({ x: x + 100, y: 260, width: 60, height: 90, type: 'block' });
+                    obs.push({ x: x + 180, y: 300, width: 50, height: 50, type: 'spike' });
                 }
-                x += 120 + Math.random() * 80;
+                x += 150 + Math.random() * 80;
             }
             return obs;
         }
 
         function generateMasterObstacles() {
             const obs = [];
-            let x = 500;
+            let x = 400;
             while (x < 6800) {
                 const rand = Math.random();
                 if (rand < 0.2) {
                     // Long spike row
                     for (let i = 0; i < 5; i++) {
-                        obs.push({ x: x + i * 42, y: 320, width: 40, height: 40, type: 'spike' });
+                        obs.push({ x: x + i * 52, y: 300, width: 50, height: 50, type: 'spike' });
                     }
                 } else if (rand < 0.35) {
                     // Wall
-                    obs.push({ x: x, y: 220, width: 80, height: 130, type: 'block' });
+                    obs.push({ x: x, y: 210, width: 90, height: 140, type: 'block' });
                 } else if (rand < 0.5) {
                     // Ceiling + floor combo
-                    obs.push({ x: x, y: 130, width: 150, height: 40, type: 'ceiling' });
-                    obs.push({ x: x + 50, y: 320, width: 40, height: 40, type: 'spike' });
-                    obs.push({ x: x + 100, y: 320, width: 40, height: 40, type: 'spike' });
+                    obs.push({ x: x, y: 120, width: 170, height: 50, type: 'ceiling' });
+                    obs.push({ x: x + 60, y: 300, width: 50, height: 50, type: 'spike' });
+                    obs.push({ x: x + 120, y: 300, width: 50, height: 50, type: 'spike' });
                 } else if (rand < 0.7) {
                     // Platform maze
-                    obs.push({ x: x, y: 320, width: 40, height: 40, type: 'spike' });
-                    obs.push({ x: x + 60, y: 260, width: 60, height: 15, type: 'platform' });
-                    obs.push({ x: x + 140, y: 200, width: 60, height: 15, type: 'platform' });
-                    obs.push({ x: x + 220, y: 320, width: 40, height: 40, type: 'spike' });
+                    obs.push({ x: x, y: 300, width: 50, height: 50, type: 'spike' });
+                    obs.push({ x: x + 80, y: 250, width: 80, height: 20, type: 'platform' });
+                    obs.push({ x: x + 180, y: 190, width: 80, height: 20, type: 'platform' });
+                    obs.push({ x: x + 280, y: 300, width: 50, height: 50, type: 'spike' });
                 } else {
                     // Dense cluster
-                    obs.push({ x: x, y: 320, width: 40, height: 40, type: 'spike' });
-                    obs.push({ x: x + 60, y: 280, width: 40, height: 70, type: 'block' });
-                    obs.push({ x: x + 120, y: 320, width: 40, height: 40, type: 'spike' });
-                    obs.push({ x: x + 160, y: 320, width: 40, height: 40, type: 'spike' });
+                    obs.push({ x: x, y: 300, width: 50, height: 50, type: 'spike' });
+                    obs.push({ x: x + 70, y: 260, width: 50, height: 90, type: 'block' });
+                    obs.push({ x: x + 140, y: 300, width: 50, height: 50, type: 'spike' });
+                    obs.push({ x: x + 200, y: 300, width: 50, height: 50, type: 'spike' });
                 }
-                x += 100 + Math.random() * 60;
+                x += 130 + Math.random() * 60;
             }
             return obs;
         }
