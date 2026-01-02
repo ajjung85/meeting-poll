@@ -765,7 +765,14 @@
             updateUI();
             gameState = 'playing';
 
+            console.log('Starting game! Player position:', player.x, player.y);
+            console.log('Canvas:', canvas.width, canvas.height);
+
             if (animationId) cancelAnimationFrame(animationId);
+
+            // Draw immediately to verify canvas works
+            draw();
+
             gameLoop();
         }
 
@@ -1032,6 +1039,13 @@
             // Draw ground
             ctx.fillStyle = currentLevelData?.groundColor || '#90EE90';
             ctx.fillRect(0, 350, canvas.width, 50);
+
+            // DEBUG: Draw a bright red square to verify drawing works
+            ctx.fillStyle = 'red';
+            ctx.fillRect(50, 250, 30, 30);
+
+            // DEBUG: Log player position
+            console.log('Player at:', player.x, player.y, 'Ground:', player.groundY);
 
             // Ground pattern
             ctx.fillStyle = 'rgba(255,255,255,0.3)';
