@@ -1,0 +1,1269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>K-Pop Demon Hunter - Endless Runner</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(135deg, #0a0015 0%, #1a0030 50%, #0a0020 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            touch-action: manipulation;
+        }
+
+        #gameContainer {
+            position: relative;
+            max-width: 100vw;
+            max-height: 100vh;
+        }
+
+        #gameCanvas {
+            display: block;
+            border: 3px solid #ff00ff;
+            box-shadow: 0 0 40px rgba(255, 0, 255, 0.6),
+                        0 0 80px rgba(0, 255, 255, 0.3),
+                        inset 0 0 30px rgba(255, 0, 255, 0.1);
+            border-radius: 10px;
+        }
+
+        #startScreen, #gameOverScreen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: rgba(10, 0, 20, 0.95);
+            border-radius: 10px;
+            z-index: 10;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        h1 {
+            color: #ff00ff;
+            font-size: 2.2rem;
+            text-shadow: 0 0 20px #ff00ff, 0 0 40px #00ffff, 0 0 60px #ff00ff;
+            margin-bottom: 5px;
+            text-align: center;
+            animation: glow 2s ease-in-out infinite alternate;
+        }
+
+        @keyframes glow {
+            from { text-shadow: 0 0 20px #ff00ff, 0 0 40px #00ffff; }
+            to { text-shadow: 0 0 30px #00ffff, 0 0 60px #ff00ff, 0 0 80px #ff00ff; }
+        }
+
+        .korean-title {
+            color: #00ffff;
+            font-size: 1.4rem;
+            text-shadow: 0 0 15px #00ffff;
+            margin-bottom: 20px;
+        }
+
+        h2 {
+            color: #ff3366;
+            font-size: 1.8rem;
+            text-shadow: 0 0 15px #ff3366;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: #ff77ff;
+            font-size: 1rem;
+            margin-bottom: 25px;
+        }
+
+        .instructions {
+            color: #aaffff;
+            font-size: 0.95rem;
+            text-align: center;
+            line-height: 1.8;
+            margin-bottom: 25px;
+            padding: 0 15px;
+        }
+
+        .score-display {
+            color: #ffff00;
+            font-size: 2rem;
+            text-shadow: 0 0 15px #ffff00;
+            margin: 15px 0;
+        }
+
+        .stats {
+            color: #00ffff;
+            font-size: 1rem;
+            margin: 5px 0;
+        }
+
+        .btn {
+            padding: 15px 50px;
+            font-size: 1.2rem;
+            border: none;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 10px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #ff00ff, #00ffff);
+            color: #0a0015;
+            font-weight: bold;
+            box-shadow: 0 0 20px rgba(255, 0, 255, 0.5);
+        }
+
+        .btn-primary:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 40px rgba(255, 0, 255, 0.8), 0 0 60px rgba(0, 255, 255, 0.6);
+        }
+
+        .high-score {
+            color: #ff66ff;
+            font-size: 1.1rem;
+            margin-top: 10px;
+        }
+
+        .controls-hint {
+            color: #888;
+            font-size: 0.8rem;
+            margin-top: 15px;
+        }
+
+        @media (max-width: 480px) {
+            h1 {
+                font-size: 1.6rem;
+            }
+            .korean-title {
+                font-size: 1.1rem;
+            }
+            .instructions {
+                font-size: 0.85rem;
+                padding: 0 20px;
+            }
+            .btn {
+                padding: 12px 35px;
+                font-size: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <canvas id="gameCanvas"></canvas>
+
+        <div id="startScreen">
+            <h1>K-Pop Demon Hunter</h1>
+            <p class="korean-title">케이팝 악마 사냥꾼</p>
+            <div class="instructions">
+                <strong>Swipe or Arrow Keys</strong> to switch lanes<br>
+                <strong>Swipe Up or Space</strong> to jump<br>
+                <strong>Swipe Down or S</strong> to slide<br><br>
+                Hunt demons & collect music notes!<br>
+                Avoid obstacles to survive!
+            </div>
+            <button class="btn btn-primary" id="startBtn">START</button>
+            <p class="controls-hint">Mobile: Swipe | Desktop: Arrow Keys + Space</p>
+        </div>
+
+        <div id="gameOverScreen" class="hidden">
+            <h2>GAME OVER</h2>
+            <p class="korean-title">게임 오버</p>
+            <div class="score-display">Score: <span id="finalScore">0</span></div>
+            <p class="stats">Demons Slain: <span id="demonsSlain">0</span></p>
+            <p class="stats">Notes Collected: <span id="notesCollected">0</span></p>
+            <div class="high-score">Best Score: <span id="highScore">0</span></div>
+            <button class="btn btn-primary" id="restartBtn">PLAY AGAIN</button>
+        </div>
+    </div>
+
+    <script>
+        // Game Configuration
+        const CONFIG = {
+            laneCount: 3,
+            laneWidth: 80,
+            playerSize: 50,
+            baseSpeed: 6,
+            maxSpeed: 14,
+            speedIncrement: 0.001,
+            jumpHeight: 120,
+            jumpDuration: 500,
+            slideDuration: 400,
+            obstacleSpawnRate: 0.02,
+            collectibleSpawnRate: 0.015,
+            demonSpawnRate: 0.008
+        };
+
+        // Canvas Setup
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        function resizeCanvas() {
+            const maxWidth = Math.min(window.innerWidth - 20, 400);
+            const maxHeight = Math.min(window.innerHeight - 20, 700);
+            canvas.width = maxWidth;
+            canvas.height = maxHeight;
+            CONFIG.laneWidth = canvas.width / 3;
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        // Game State
+        let gameState = 'start';
+        let score = 0;
+        let highScore = localStorage.getItem('kpopDemonHunterHighScore') || 0;
+        let demonsSlain = 0;
+        let notesCollected = 0;
+        let gameSpeed = CONFIG.baseSpeed;
+        let distance = 0;
+
+        // Player
+        const player = {
+            lane: 1, // 0 = left, 1 = center, 2 = right
+            x: 0,
+            y: 0,
+            targetX: 0,
+            isJumping: false,
+            isSliding: false,
+            jumpProgress: 0,
+            slideProgress: 0,
+            attackCooldown: 0,
+            glowIntensity: 0,
+            runFrame: 0,
+            invincible: 0
+        };
+
+        // Game Objects
+        let obstacles = [];
+        let collectibles = [];
+        let demons = [];
+        let particles = [];
+        let slashEffects = [];
+
+        // Background elements
+        let stars = [];
+        let cityBuildings = [];
+        let groundLines = [];
+
+        // Touch controls
+        let touchStartX = 0;
+        let touchStartY = 0;
+
+        // Initialize background
+        function initBackground() {
+            stars = [];
+            for (let i = 0; i < 80; i++) {
+                stars.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height * 0.6,
+                    size: Math.random() * 2 + 0.5,
+                    twinkle: Math.random() * Math.PI * 2
+                });
+            }
+
+            cityBuildings = [];
+            for (let i = 0; i < 12; i++) {
+                cityBuildings.push({
+                    x: i * 40 + Math.random() * 20,
+                    width: 25 + Math.random() * 30,
+                    height: 60 + Math.random() * 120,
+                    color: `hsl(${280 + Math.random() * 40}, 60%, ${15 + Math.random() * 10}%)`
+                });
+            }
+
+            groundLines = [];
+            for (let i = 0; i < 20; i++) {
+                groundLines.push({
+                    z: i * 50,
+                    opacity: 1
+                });
+            }
+        }
+
+        // Initialize game
+        function initGame() {
+            player.lane = 1;
+            player.x = canvas.width / 2;
+            player.y = canvas.height - 150;
+            player.targetX = canvas.width / 2;
+            player.isJumping = false;
+            player.isSliding = false;
+            player.jumpProgress = 0;
+            player.slideProgress = 0;
+            player.invincible = 0;
+
+            obstacles = [];
+            collectibles = [];
+            demons = [];
+            particles = [];
+            slashEffects = [];
+
+            score = 0;
+            demonsSlain = 0;
+            notesCollected = 0;
+            gameSpeed = CONFIG.baseSpeed;
+            distance = 0;
+
+            initBackground();
+        }
+
+        function getLaneX(lane) {
+            return CONFIG.laneWidth * lane + CONFIG.laneWidth / 2;
+        }
+
+        function changeLane(direction) {
+            if (gameState !== 'playing') return;
+
+            const newLane = player.lane + direction;
+            if (newLane >= 0 && newLane < CONFIG.laneCount) {
+                player.lane = newLane;
+                player.targetX = getLaneX(player.lane);
+
+                // Create lane change particles
+                for (let i = 0; i < 5; i++) {
+                    particles.push({
+                        x: player.x,
+                        y: player.y + 20,
+                        vx: -direction * (Math.random() * 3 + 2),
+                        vy: Math.random() * 2 - 1,
+                        life: 1,
+                        color: '#ff00ff'
+                    });
+                }
+            }
+        }
+
+        function jump() {
+            if (gameState !== 'playing' || player.isJumping || player.isSliding) return;
+
+            player.isJumping = true;
+            player.jumpProgress = 0;
+
+            // Jump particles
+            for (let i = 0; i < 8; i++) {
+                particles.push({
+                    x: player.x + Math.random() * 30 - 15,
+                    y: player.y + 40,
+                    vx: Math.random() * 4 - 2,
+                    vy: Math.random() * 2 + 1,
+                    life: 1,
+                    color: '#00ffff'
+                });
+            }
+        }
+
+        function slide() {
+            if (gameState !== 'playing' || player.isJumping || player.isSliding) return;
+
+            player.isSliding = true;
+            player.slideProgress = 0;
+        }
+
+        function attack() {
+            if (player.attackCooldown > 0) return;
+
+            player.attackCooldown = 20;
+            player.glowIntensity = 1;
+
+            // Create slash effect
+            slashEffects.push({
+                x: player.x,
+                y: player.y - 20,
+                life: 1,
+                rotation: Math.random() * 0.5 - 0.25
+            });
+
+            // Check for demon hits
+            demons.forEach((demon, index) => {
+                const dx = demon.x - player.x;
+                const dy = demon.y - player.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+
+                if (dist < 80 && demon.y > player.y - 60) {
+                    // Hit demon!
+                    demons.splice(index, 1);
+                    demonsSlain++;
+                    score += 50;
+
+                    // Explosion particles
+                    for (let i = 0; i < 15; i++) {
+                        const angle = (Math.PI * 2 / 15) * i;
+                        particles.push({
+                            x: demon.x,
+                            y: demon.y,
+                            vx: Math.cos(angle) * (Math.random() * 5 + 3),
+                            vy: Math.sin(angle) * (Math.random() * 5 + 3),
+                            life: 1,
+                            color: demon.color
+                        });
+                    }
+                }
+            });
+        }
+
+        function spawnObstacle() {
+            const lane = Math.floor(Math.random() * CONFIG.laneCount);
+            const types = ['barrier', 'spike', 'portal'];
+            const type = types[Math.floor(Math.random() * types.length)];
+
+            obstacles.push({
+                x: getLaneX(lane),
+                y: -50,
+                lane: lane,
+                type: type,
+                width: 50,
+                height: type === 'spike' ? 30 : 60,
+                low: type === 'spike'
+            });
+        }
+
+        function spawnCollectible() {
+            const lane = Math.floor(Math.random() * CONFIG.laneCount);
+            const types = ['note', 'heart', 'star'];
+            const type = types[Math.floor(Math.random() * types.length)];
+
+            collectibles.push({
+                x: getLaneX(lane),
+                y: -30,
+                lane: lane,
+                type: type,
+                rotation: 0,
+                pulse: 0
+            });
+        }
+
+        function spawnDemon() {
+            const lane = Math.floor(Math.random() * CONFIG.laneCount);
+            const types = [
+                { name: 'shadow', color: '#8800ff', size: 40 },
+                { name: 'fire', color: '#ff4400', size: 45 },
+                { name: 'ice', color: '#00ccff', size: 35 }
+            ];
+            const demonType = types[Math.floor(Math.random() * types.length)];
+
+            demons.push({
+                x: getLaneX(lane),
+                y: -50,
+                lane: lane,
+                type: demonType.name,
+                color: demonType.color,
+                size: demonType.size,
+                phase: Math.random() * Math.PI * 2,
+                health: 1
+            });
+        }
+
+        function update() {
+            if (gameState !== 'playing') return;
+
+            // Increase speed over time
+            gameSpeed = Math.min(CONFIG.maxSpeed, CONFIG.baseSpeed + distance * CONFIG.speedIncrement);
+            distance += gameSpeed;
+            score += Math.floor(gameSpeed / 10);
+
+            // Update player position (smooth lane transition)
+            player.x += (player.targetX - player.x) * 0.2;
+            player.runFrame += 0.3;
+            player.glowIntensity *= 0.9;
+            player.attackCooldown = Math.max(0, player.attackCooldown - 1);
+            player.invincible = Math.max(0, player.invincible - 1);
+
+            // Jump physics
+            if (player.isJumping) {
+                player.jumpProgress += 16 / CONFIG.jumpDuration;
+                if (player.jumpProgress >= 1) {
+                    player.isJumping = false;
+                    player.jumpProgress = 0;
+                }
+            }
+
+            // Slide physics
+            if (player.isSliding) {
+                player.slideProgress += 16 / CONFIG.slideDuration;
+                if (player.slideProgress >= 1) {
+                    player.isSliding = false;
+                    player.slideProgress = 0;
+                }
+            }
+
+            // Spawn game objects
+            if (Math.random() < CONFIG.obstacleSpawnRate) spawnObstacle();
+            if (Math.random() < CONFIG.collectibleSpawnRate) spawnCollectible();
+            if (Math.random() < CONFIG.demonSpawnRate) spawnDemon();
+
+            // Update obstacles
+            for (let i = obstacles.length - 1; i >= 0; i--) {
+                const obs = obstacles[i];
+                obs.y += gameSpeed;
+
+                // Collision check
+                if (obs.y > player.y - 40 && obs.y < player.y + 30 && obs.lane === player.lane) {
+                    if (player.invincible <= 0) {
+                        // Check if player can avoid
+                        if (obs.low && player.isJumping) {
+                            // Jumped over low obstacle
+                        } else if (!obs.low && player.isSliding) {
+                            // Slid under high obstacle
+                        } else if (!player.isJumping && !player.isSliding) {
+                            gameOver();
+                            return;
+                        }
+                    }
+                }
+
+                if (obs.y > canvas.height + 50) {
+                    obstacles.splice(i, 1);
+                }
+            }
+
+            // Update collectibles
+            for (let i = collectibles.length - 1; i >= 0; i--) {
+                const col = collectibles[i];
+                col.y += gameSpeed;
+                col.rotation += 0.1;
+                col.pulse += 0.15;
+
+                // Collection check
+                if (col.y > player.y - 30 && col.y < player.y + 30 && col.lane === player.lane) {
+                    // Collected!
+                    if (col.type === 'note') {
+                        score += 10;
+                        notesCollected++;
+                    } else if (col.type === 'heart') {
+                        player.invincible = 180;
+                        score += 25;
+                    } else if (col.type === 'star') {
+                        score += 50;
+                    }
+
+                    // Collection particles
+                    for (let j = 0; j < 8; j++) {
+                        particles.push({
+                            x: col.x,
+                            y: col.y,
+                            vx: Math.random() * 6 - 3,
+                            vy: Math.random() * -4 - 2,
+                            life: 1,
+                            color: col.type === 'note' ? '#ffff00' : col.type === 'heart' ? '#ff66ff' : '#00ffff'
+                        });
+                    }
+
+                    collectibles.splice(i, 1);
+                    continue;
+                }
+
+                if (col.y > canvas.height + 30) {
+                    collectibles.splice(i, 1);
+                }
+            }
+
+            // Update demons
+            for (let i = demons.length - 1; i >= 0; i--) {
+                const demon = demons[i];
+                demon.y += gameSpeed * 0.8;
+                demon.phase += 0.1;
+                demon.x = getLaneX(demon.lane) + Math.sin(demon.phase) * 15;
+
+                // Collision with player
+                if (demon.y > player.y - 30 && demon.y < player.y + 30 && demon.lane === player.lane) {
+                    if (player.invincible <= 0 && !player.isJumping) {
+                        gameOver();
+                        return;
+                    }
+                }
+
+                if (demon.y > canvas.height + 50) {
+                    demons.splice(i, 1);
+                }
+            }
+
+            // Update particles
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                p.life -= 0.03;
+                if (p.life <= 0) {
+                    particles.splice(i, 1);
+                }
+            }
+
+            // Update slash effects
+            for (let i = slashEffects.length - 1; i >= 0; i--) {
+                slashEffects[i].life -= 0.1;
+                if (slashEffects[i].life <= 0) {
+                    slashEffects.splice(i, 1);
+                }
+            }
+
+            // Update background
+            stars.forEach(star => {
+                star.twinkle += 0.05;
+            });
+
+            cityBuildings.forEach(building => {
+                building.x -= gameSpeed * 0.1;
+                if (building.x + building.width < 0) {
+                    building.x = canvas.width + 20;
+                    building.height = 60 + Math.random() * 120;
+                }
+            });
+
+            groundLines.forEach(line => {
+                line.z -= gameSpeed;
+                if (line.z < 0) {
+                    line.z = 1000;
+                }
+            });
+        }
+
+        function gameOver() {
+            gameState = 'gameOver';
+            if (score > highScore) {
+                highScore = score;
+                localStorage.setItem('kpopDemonHunterHighScore', highScore);
+            }
+            document.getElementById('finalScore').textContent = score;
+            document.getElementById('demonsSlain').textContent = demonsSlain;
+            document.getElementById('notesCollected').textContent = notesCollected;
+            document.getElementById('highScore').textContent = highScore;
+            document.getElementById('gameOverScreen').classList.remove('hidden');
+        }
+
+        function draw() {
+            // Clear and draw gradient background
+            const bgGradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+            bgGradient.addColorStop(0, '#0a0020');
+            bgGradient.addColorStop(0.4, '#1a0040');
+            bgGradient.addColorStop(0.7, '#2a0050');
+            bgGradient.addColorStop(1, '#1a0030');
+            ctx.fillStyle = bgGradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Draw stars
+            stars.forEach(star => {
+                const brightness = 0.5 + Math.sin(star.twinkle) * 0.5;
+                ctx.beginPath();
+                ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(255, 255, 255, ${brightness})`;
+                ctx.fill();
+            });
+
+            // Draw city silhouette
+            cityBuildings.forEach(building => {
+                ctx.fillStyle = building.color;
+                ctx.fillRect(building.x, canvas.height * 0.4 - building.height, building.width, building.height + 20);
+
+                // Neon windows
+                ctx.fillStyle = 'rgba(255, 0, 255, 0.4)';
+                for (let i = 0; i < 3; i++) {
+                    for (let j = 0; j < Math.floor(building.height / 30); j++) {
+                        if (Math.random() > 0.5) {
+                            ctx.fillRect(
+                                building.x + 5 + i * 8,
+                                canvas.height * 0.4 - building.height + 10 + j * 25,
+                                5, 10
+                            );
+                        }
+                    }
+                }
+            });
+
+            // Draw ground/road
+            const roadGradient = ctx.createLinearGradient(0, canvas.height * 0.5, 0, canvas.height);
+            roadGradient.addColorStop(0, '#1a1a2e');
+            roadGradient.addColorStop(1, '#0f0f1a');
+            ctx.fillStyle = roadGradient;
+            ctx.fillRect(0, canvas.height * 0.45, canvas.width, canvas.height * 0.55);
+
+            // Draw lane dividers
+            ctx.strokeStyle = '#ff00ff';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([20, 20]);
+            for (let i = 1; i < CONFIG.laneCount; i++) {
+                const x = CONFIG.laneWidth * i;
+                ctx.beginPath();
+                ctx.moveTo(x, canvas.height * 0.5);
+                ctx.lineTo(x, canvas.height);
+                ctx.stroke();
+            }
+            ctx.setLineDash([]);
+
+            // Draw ground glow lines (perspective effect)
+            groundLines.forEach(line => {
+                const perspective = 1 - line.z / 1000;
+                const y = canvas.height * 0.5 + perspective * canvas.height * 0.5;
+                ctx.strokeStyle = `rgba(0, 255, 255, ${perspective * 0.3})`;
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(canvas.width, y);
+                ctx.stroke();
+            });
+
+            // Draw obstacles
+            obstacles.forEach(obs => {
+                ctx.save();
+                ctx.translate(obs.x, obs.y);
+
+                if (obs.type === 'barrier') {
+                    // Neon barrier
+                    const gradient = ctx.createLinearGradient(-25, 0, 25, 0);
+                    gradient.addColorStop(0, '#ff0066');
+                    gradient.addColorStop(0.5, '#ff00ff');
+                    gradient.addColorStop(1, '#ff0066');
+                    ctx.fillStyle = gradient;
+                    ctx.fillRect(-25, -30, 50, 60);
+
+                    ctx.strokeStyle = '#ffffff';
+                    ctx.lineWidth = 2;
+                    ctx.strokeRect(-25, -30, 50, 60);
+
+                    // Warning stripes
+                    ctx.fillStyle = '#ffff00';
+                    for (let i = 0; i < 5; i++) {
+                        ctx.fillRect(-25, -30 + i * 15, 50, 5);
+                    }
+                } else if (obs.type === 'spike') {
+                    // Ground spikes
+                    ctx.fillStyle = '#cc00ff';
+                    ctx.beginPath();
+                    ctx.moveTo(-20, 15);
+                    ctx.lineTo(-10, -15);
+                    ctx.lineTo(0, 15);
+                    ctx.lineTo(10, -15);
+                    ctx.lineTo(20, 15);
+                    ctx.closePath();
+                    ctx.fill();
+
+                    ctx.strokeStyle = '#ff66ff';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                } else if (obs.type === 'portal') {
+                    // Dark portal
+                    ctx.beginPath();
+                    ctx.arc(0, 0, 25, 0, Math.PI * 2);
+                    const portalGradient = ctx.createRadialGradient(0, 0, 0, 0, 0, 25);
+                    portalGradient.addColorStop(0, '#000000');
+                    portalGradient.addColorStop(0.5, '#330033');
+                    portalGradient.addColorStop(1, '#660066');
+                    ctx.fillStyle = portalGradient;
+                    ctx.fill();
+
+                    ctx.strokeStyle = '#ff00ff';
+                    ctx.lineWidth = 3;
+                    ctx.stroke();
+                }
+
+                ctx.restore();
+            });
+
+            // Draw collectibles
+            collectibles.forEach(col => {
+                ctx.save();
+                ctx.translate(col.x, col.y);
+                ctx.rotate(col.rotation);
+
+                const pulse = 1 + Math.sin(col.pulse) * 0.1;
+                ctx.scale(pulse, pulse);
+
+                if (col.type === 'note') {
+                    // Music note
+                    ctx.fillStyle = '#ffff00';
+                    ctx.beginPath();
+                    ctx.arc(0, 5, 8, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.fillRect(6, -15, 3, 20);
+                    ctx.beginPath();
+                    ctx.arc(9, -15, 5, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    // Glow
+                    ctx.shadowColor = '#ffff00';
+                    ctx.shadowBlur = 10;
+                    ctx.fill();
+                    ctx.shadowBlur = 0;
+                } else if (col.type === 'heart') {
+                    // Heart power-up
+                    ctx.fillStyle = '#ff66ff';
+                    ctx.beginPath();
+                    ctx.moveTo(0, 5);
+                    ctx.bezierCurveTo(-10, -5, -10, -15, 0, -10);
+                    ctx.bezierCurveTo(10, -15, 10, -5, 0, 5);
+                    ctx.fill();
+
+                    ctx.shadowColor = '#ff66ff';
+                    ctx.shadowBlur = 15;
+                    ctx.fill();
+                    ctx.shadowBlur = 0;
+                } else if (col.type === 'star') {
+                    // Star bonus
+                    ctx.fillStyle = '#00ffff';
+                    ctx.beginPath();
+                    for (let i = 0; i < 5; i++) {
+                        const angle = (i * 4 * Math.PI) / 5 - Math.PI / 2;
+                        const r = i % 2 === 0 ? 12 : 5;
+                        if (i === 0) {
+                            ctx.moveTo(Math.cos(angle) * r, Math.sin(angle) * r);
+                        } else {
+                            ctx.lineTo(Math.cos(angle) * r, Math.sin(angle) * r);
+                        }
+                    }
+                    ctx.closePath();
+                    ctx.fill();
+
+                    ctx.shadowColor = '#00ffff';
+                    ctx.shadowBlur = 12;
+                    ctx.fill();
+                    ctx.shadowBlur = 0;
+                }
+
+                ctx.restore();
+            });
+
+            // Draw demons
+            demons.forEach(demon => {
+                ctx.save();
+                ctx.translate(demon.x, demon.y);
+
+                const wobble = Math.sin(demon.phase * 2) * 3;
+
+                // Demon body
+                ctx.beginPath();
+                ctx.arc(0, wobble, demon.size / 2, 0, Math.PI * 2);
+                const demonGradient = ctx.createRadialGradient(0, wobble, 0, 0, wobble, demon.size / 2);
+                demonGradient.addColorStop(0, demon.color);
+                demonGradient.addColorStop(0.7, demon.color);
+                demonGradient.addColorStop(1, '#000000');
+                ctx.fillStyle = demonGradient;
+                ctx.fill();
+
+                // Demon eyes
+                ctx.fillStyle = '#ff0000';
+                ctx.beginPath();
+                ctx.arc(-8, wobble - 5, 4, 0, Math.PI * 2);
+                ctx.arc(8, wobble - 5, 4, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Evil glow
+                ctx.shadowColor = demon.color;
+                ctx.shadowBlur = 20;
+                ctx.beginPath();
+                ctx.arc(0, wobble, demon.size / 2 + 5, 0, Math.PI * 2);
+                ctx.strokeStyle = demon.color;
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                ctx.shadowBlur = 0;
+
+                // Horns
+                ctx.fillStyle = '#330000';
+                ctx.beginPath();
+                ctx.moveTo(-12, wobble - 15);
+                ctx.lineTo(-8, wobble - 30);
+                ctx.lineTo(-4, wobble - 15);
+                ctx.closePath();
+                ctx.fill();
+                ctx.beginPath();
+                ctx.moveTo(12, wobble - 15);
+                ctx.lineTo(8, wobble - 30);
+                ctx.lineTo(4, wobble - 15);
+                ctx.closePath();
+                ctx.fill();
+
+                ctx.restore();
+            });
+
+            // Draw particles
+            particles.forEach(p => {
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, 4 * p.life, 0, Math.PI * 2);
+                ctx.fillStyle = p.color + Math.floor(p.life * 255).toString(16).padStart(2, '0');
+                ctx.fill();
+            });
+
+            // Draw slash effects
+            slashEffects.forEach(slash => {
+                ctx.save();
+                ctx.translate(slash.x, slash.y);
+                ctx.rotate(slash.rotation);
+                ctx.globalAlpha = slash.life;
+
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 4;
+                ctx.lineCap = 'round';
+
+                ctx.beginPath();
+                ctx.moveTo(-40, 20);
+                ctx.quadraticCurveTo(0, -30, 40, 20);
+                ctx.stroke();
+
+                ctx.strokeStyle = '#ff00ff';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                ctx.globalAlpha = 1;
+                ctx.restore();
+            });
+
+            // Draw player (K-Pop Demon Hunter)
+            drawPlayer();
+
+            // Draw UI
+            if (gameState === 'playing') {
+                // Score
+                ctx.fillStyle = '#ff00ff';
+                ctx.font = 'bold 28px Arial';
+                ctx.textAlign = 'center';
+                ctx.shadowColor = '#ff00ff';
+                ctx.shadowBlur = 10;
+                ctx.fillText(score, canvas.width / 2, 40);
+                ctx.shadowBlur = 0;
+
+                // Demons slain counter
+                ctx.fillStyle = '#ff4400';
+                ctx.font = 'bold 16px Arial';
+                ctx.textAlign = 'left';
+                ctx.fillText('👹 ' + demonsSlain, 15, 30);
+
+                // Notes collected
+                ctx.fillStyle = '#ffff00';
+                ctx.textAlign = 'right';
+                ctx.fillText('🎵 ' + notesCollected, canvas.width - 15, 30);
+
+                // Speed indicator
+                ctx.fillStyle = '#00ffff';
+                ctx.textAlign = 'center';
+                ctx.font = '12px Arial';
+                ctx.fillText('SPEED x' + gameSpeed.toFixed(1), canvas.width / 2, 60);
+            }
+        }
+
+        function drawPlayer() {
+            ctx.save();
+
+            const jumpOffset = player.isJumping ?
+                Math.sin(player.jumpProgress * Math.PI) * CONFIG.jumpHeight : 0;
+
+            const slideSquish = player.isSliding ? 0.5 : 1;
+            const slideOffset = player.isSliding ? 15 : 0;
+
+            ctx.translate(player.x, player.y - jumpOffset + slideOffset);
+            ctx.scale(1, slideSquish);
+
+            // Invincibility glow
+            if (player.invincible > 0) {
+                ctx.beginPath();
+                ctx.arc(0, 0, 40, 0, Math.PI * 2);
+                const invGradient = ctx.createRadialGradient(0, 0, 20, 0, 0, 40);
+                invGradient.addColorStop(0, 'rgba(255, 102, 255, 0.4)');
+                invGradient.addColorStop(1, 'rgba(255, 102, 255, 0)');
+                ctx.fillStyle = invGradient;
+                ctx.fill();
+            }
+
+            // Attack glow
+            if (player.glowIntensity > 0.1) {
+                ctx.beginPath();
+                ctx.arc(0, -10, 35 + player.glowIntensity * 20, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(255, 0, 255, ${player.glowIntensity * 0.3})`;
+                ctx.fill();
+            }
+
+            // Shadow
+            ctx.beginPath();
+            ctx.ellipse(0, 35, 20, 8, 0, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+            ctx.fill();
+
+            // Legs (running animation)
+            const legAngle = Math.sin(player.runFrame) * 0.4;
+            ctx.strokeStyle = '#2a1a3a';
+            ctx.lineWidth = 8;
+            ctx.lineCap = 'round';
+
+            // Left leg
+            ctx.beginPath();
+            ctx.moveTo(-8, 15);
+            ctx.lineTo(-8 + Math.sin(legAngle) * 15, 35);
+            ctx.stroke();
+
+            // Right leg
+            ctx.beginPath();
+            ctx.moveTo(8, 15);
+            ctx.lineTo(8 + Math.sin(-legAngle) * 15, 35);
+            ctx.stroke();
+
+            // Boots
+            ctx.fillStyle = '#ff00ff';
+            ctx.beginPath();
+            ctx.ellipse(-8 + Math.sin(legAngle) * 15, 38, 8, 5, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.ellipse(8 + Math.sin(-legAngle) * 15, 38, 8, 5, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Body (K-pop style outfit)
+            ctx.fillStyle = '#1a0030';
+            ctx.beginPath();
+            ctx.moveTo(-15, -5);
+            ctx.lineTo(-12, 20);
+            ctx.lineTo(12, 20);
+            ctx.lineTo(15, -5);
+            ctx.closePath();
+            ctx.fill();
+
+            // Outfit details
+            ctx.strokeStyle = '#ff00ff';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // Glowing accents on outfit
+            ctx.strokeStyle = '#00ffff';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(-10, 0);
+            ctx.lineTo(-10, 15);
+            ctx.moveTo(10, 0);
+            ctx.lineTo(10, 15);
+            ctx.moveTo(-5, 5);
+            ctx.lineTo(5, 5);
+            ctx.stroke();
+
+            // Arms
+            const armSwing = Math.sin(player.runFrame) * 0.3;
+            ctx.strokeStyle = '#ffe4c4';
+            ctx.lineWidth = 6;
+
+            // Left arm
+            ctx.beginPath();
+            ctx.moveTo(-15, 0);
+            ctx.lineTo(-25 + Math.sin(-armSwing) * 10, 15);
+            ctx.stroke();
+
+            // Right arm (holding weapon)
+            ctx.beginPath();
+            ctx.moveTo(15, 0);
+            ctx.lineTo(28, -5);
+            ctx.stroke();
+
+            // Demon hunting sword
+            ctx.save();
+            ctx.translate(28, -5);
+            ctx.rotate(-0.3 + Math.sin(player.runFrame * 0.5) * 0.1);
+
+            // Sword blade
+            ctx.fillStyle = '#00ffff';
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(5, -35);
+            ctx.lineTo(0, -40);
+            ctx.lineTo(-5, -35);
+            ctx.closePath();
+            ctx.fill();
+
+            // Sword glow
+            ctx.shadowColor = '#00ffff';
+            ctx.shadowBlur = 10;
+            ctx.fill();
+            ctx.shadowBlur = 0;
+
+            // Sword handle
+            ctx.fillStyle = '#ff00ff';
+            ctx.fillRect(-3, 0, 6, 12);
+
+            ctx.restore();
+
+            // Head
+            ctx.beginPath();
+            ctx.arc(0, -18, 14, 0, Math.PI * 2);
+            ctx.fillStyle = '#ffe4c4';
+            ctx.fill();
+
+            // K-pop hairstyle (colorful)
+            ctx.fillStyle = '#ff66ff';
+            ctx.beginPath();
+            ctx.arc(0, -22, 14, Math.PI, 0);
+            ctx.fill();
+
+            // Hair highlights
+            ctx.fillStyle = '#aa00ff';
+            ctx.beginPath();
+            ctx.ellipse(-8, -25, 5, 8, -0.3, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Side hair
+            ctx.fillStyle = '#ff66ff';
+            ctx.beginPath();
+            ctx.ellipse(-14, -15, 4, 10, -0.2, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.ellipse(14, -15, 4, 10, 0.2, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Eyes (K-pop style with makeup)
+            ctx.fillStyle = '#000000';
+            ctx.beginPath();
+            ctx.ellipse(-5, -18, 3, 4, 0, 0, Math.PI * 2);
+            ctx.ellipse(5, -18, 3, 4, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Eye shine
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.arc(-4, -19, 1.5, 0, Math.PI * 2);
+            ctx.arc(6, -19, 1.5, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Eyeliner
+            ctx.strokeStyle = '#000000';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(-8, -18);
+            ctx.lineTo(-10, -17);
+            ctx.moveTo(8, -18);
+            ctx.lineTo(10, -17);
+            ctx.stroke();
+
+            // Smile
+            ctx.strokeStyle = '#ff6666';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(0, -14, 5, 0.2, Math.PI - 0.2);
+            ctx.stroke();
+
+            // Headband with demon symbol
+            ctx.fillStyle = '#1a0030';
+            ctx.fillRect(-15, -30, 30, 6);
+            ctx.strokeStyle = '#ff00ff';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(-15, -30, 30, 6);
+
+            // Demon hunter symbol
+            ctx.fillStyle = '#00ffff';
+            ctx.font = 'bold 8px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('⚔', 0, -25);
+
+            ctx.restore();
+        }
+
+        function gameLoop() {
+            update();
+            draw();
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Event Listeners
+        document.getElementById('startBtn').addEventListener('click', () => {
+            document.getElementById('startScreen').classList.add('hidden');
+            gameState = 'playing';
+            initGame();
+        });
+
+        document.getElementById('restartBtn').addEventListener('click', () => {
+            document.getElementById('gameOverScreen').classList.add('hidden');
+            gameState = 'playing';
+            initGame();
+        });
+
+        // Keyboard controls
+        document.addEventListener('keydown', (e) => {
+            if (gameState !== 'playing') return;
+
+            switch(e.code) {
+                case 'ArrowLeft':
+                case 'KeyA':
+                    e.preventDefault();
+                    changeLane(-1);
+                    break;
+                case 'ArrowRight':
+                case 'KeyD':
+                    e.preventDefault();
+                    changeLane(1);
+                    break;
+                case 'ArrowUp':
+                case 'Space':
+                case 'KeyW':
+                    e.preventDefault();
+                    jump();
+                    break;
+                case 'ArrowDown':
+                case 'KeyS':
+                    e.preventDefault();
+                    slide();
+                    break;
+                case 'KeyX':
+                case 'KeyZ':
+                    e.preventDefault();
+                    attack();
+                    break;
+            }
+        });
+
+        // Touch controls
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            touchStartX = e.touches[0].clientX;
+            touchStartY = e.touches[0].clientY;
+        });
+
+        canvas.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            if (gameState !== 'playing') return;
+
+            const touchEndX = e.changedTouches[0].clientX;
+            const touchEndY = e.changedTouches[0].clientY;
+
+            const dx = touchEndX - touchStartX;
+            const dy = touchEndY - touchStartY;
+
+            const minSwipe = 30;
+
+            if (Math.abs(dx) > Math.abs(dy)) {
+                // Horizontal swipe
+                if (dx > minSwipe) {
+                    changeLane(1);
+                } else if (dx < -minSwipe) {
+                    changeLane(-1);
+                }
+            } else {
+                // Vertical swipe
+                if (dy < -minSwipe) {
+                    jump();
+                } else if (dy > minSwipe) {
+                    slide();
+                }
+            }
+        });
+
+        // Tap to attack
+        canvas.addEventListener('click', (e) => {
+            if (gameState === 'playing') {
+                attack();
+            }
+        });
+
+        // Initialize and start
+        initBackground();
+        gameLoop();
+    </script>
+</body>
+</html>
